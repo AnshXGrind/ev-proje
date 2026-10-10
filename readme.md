@@ -1,39 +1,54 @@
-# EV Charging Infrastructure Planner
+# India-wide EV Charging Infrastructure Planner
 
-A Python and FastAPI application for exploring a dated public EV charging-station inventory and screening possible locations for additional chargers across the seven original North Indian regions, eight North-Eastern states, and Bihar, Uttar Pradesh and Madhya Pradesh.
+GRIDPULSE is a Python/FastAPI planning prototype for exploring a dated public EV charging-station inventory, screening coverage gaps, and reviewing route corridors across **all 28 Indian states and 8 union territories**.
 
 ## What it does
 
-- Displays charger records from the available Bureau of Energy Efficiency (BEE) snapshot.
-- Optionally loads a North-East GeoJSON covering Assam, Arunachal Pradesh, Manipur, Meghalaya, Mizoram, Nagaland, Sikkim and Tripura.
-- Optionally loads a Central states GeoJSON covering Bihar, Uttar Pradesh and Madhya Pradesh.
-- Filters and searches records by region and charger details.
-- Uses DBSCAN with Haversine distance to group nearby coordinate locations.
-- Generates preliminary coverage-gap candidates from reported coordinates.
-- Reviews a selected driving route against nearby inventory and sampled elevation data.
-- Calculates route-spacing scenarios from terrain, usable vehicle range, battery reserve and user-selected assumptions.
-- Exports candidate locations and analysis results as CSV or JSON.
+- Displays source-reported charger records from the Bureau of Energy Efficiency (BEE) public charging-station PDF snapshot dated **26 October 2025**.
+- Validates charger coordinates against a state/UT polygon layer and only puts records inside both India and their reported state/UT into the operational nationwide map.
+- Retains out-of-country, invalid-coordinate, suspicious-coordinate and state-mismatch records in a row-level audit CSV for review instead of silently plotting them.
+- Filters and searches records by state/UT, district, charger details and source provenance.
+- Uses DBSCAN with Haversine distance to group nearby coordinate locations; clusters are not demand estimates.
+- Generates preliminary coverage-gap candidates and screens candidate points against their selected state/UT polygon.
+- Reviews route corridors against nearby reported inventory, sampled elevation and conservative scenario assumptions.
+- Exposes `/api/health` fields describing nationwide-data and boundary availability, and `/api/boundaries` for the locally installed polygons.
 
-## Run locally
+## Install / run on Windows
 
-From PowerShell in the repository folder:
+From PowerShell in the repository root:
 
 ```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements-mvp.txt
 .\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
-Open `http://127.0.0.1:8000`. The API documentation is at `http://127.0.0.1:8000/docs`; the route page is at `http://127.0.0.1:8000/route-planner`.
+Open `http://127.0.0.1:8000`. API documentation is at `http://127.0.0.1:8000/docs`; route planner is at `http://127.0.0.1:8000/route-planner`.
 
-The local file `data/processed/north_india_ev_chargers_map.geojson` is required. To enable the eight North-Eastern states, place `northeast_ev_chargers_map.geojson` in `data/processed/`. To enable Bihar, Uttar Pradesh and Madhya Pradesh, also place `central_states_ev_chargers_map.geojson` there. Both supplemental files are supplied separately because generated data files are not tracked. `/api/health` reports whether each was loaded.
+## Nationwide inventory data
 
-## Methods
+The source-derived CSVs and resulting national map are generated-data files and are not stored in Git. Install the India-wide data bundle, then run:
 
-- **DBSCAN:** groups approximate station coordinate locations by proximity.
-- **Baseline placement:** ranks midpoint candidates using straight-line distances between reported coordinate groups.
-- **Route screening:** compares a selected route with nearby reported inventory and estimates spacing from terrain, range and scenario inputs.
+```powershell
+.\.venv\Scripts\python.exe scripts\validate_india_inventory.py
+```
 
-## Data and limitations
+The validator downloads the NIC WebGIS state/UT polygons (the layer description says it contains 36 polygons sourced from Survey of India topographic-map administrative boundaries), runs point-in-polygon checks, and writes:
 
-The inventory source snapshot is dated 26 October 2025. The North-East file contains 645 mapped source records across eight states and the Central states file contains 4,080 mapped source records across Bihar, Uttar Pradesh and Madhya Pradesh; source status is not live verified and these are not confirmed unique operating physical sites. It does not provide live operating status, traffic counts or charging-session history. Coordinate records are not a verified count of operating physical sites. Candidate locations are for initial review, not confirmed land parcels or approved roadside installations. Electrical feasibility requires local feeder, transformer and load data; it is not verified by the current application.
+- `data/processed/india_ev_chargers_map.geojson` — accepted points only.
+- `data/reports/india_ev_chargers_boundary_audit.csv` — row-level accepted/excluded status and matched state.
+- `data/reports/india_ev_chargers_boundary_summary.json` — counts, source and timestamp.
+- `data/boundaries/india_states_boundary.geojson` — saved boundary input used by the app and planner.
 
-Road routing and place/elevation lookups use external services and require internet access. Route geometry, seasonal road conditions and access restrictions must be checked before using results for deployment. OpenStreetMap data attribution and licensing must be respected.
+The validation script **fails closed** if it cannot obtain a usable boundary layer. A rough bounding rectangle is not treated as proof that a point is inside India. Keep the candidate map separate until validation succeeds.
+
+## Method and limitations
+
+- **Inventory source:** dated snapshot, not live. Current operating status, charger availability, physical-site uniqueness, land access, grid capacity and permits are not verified.
+- **Exact deduplication:** identical source-field groups are combined for review and retain duplicate occurrence counts; this does not claim unique physical stations.
+- **DBSCAN:** spatial concentration only; not supervised ML and not a demand model.
+- **Coverage planning:** candidate locations are screening suggestions only. State polygon containment does not verify road access, land suitability, flood risk or electrical interconnection.
+- **Route planner:** routing, geocoding and elevation providers are best-effort public endpoints. Terrain/range/adoption results are explicit assumptions, not trained or validated forecasts.
+
+## Project status
+
+The application supports the nationwide schema and boundary checks. The final accepted record count depends on the downloaded boundary layer and is reported by `/api/health` and `data/reports/india_ev_chargers_boundary_summary.json`.
