@@ -1,4 +1,4 @@
-# North India EV Planner (MVP)
+# North & Northeast India EV Planner (MVP)
 
 This adds a local FastAPI backend and an interactive dashboard to the existing `ev-proje` project. It uses the filtered BEE public charging-station inventory already extracted from the PDF. No Open Charge Map API key is needed.
 
@@ -32,6 +32,10 @@ The startup script installs four runtime dependencies into the project `.venv`: 
 - Candidate points are straight-line midpoint screening coordinates, not confirmed road-side sites or available land.
 - Per-site cost is an editable scenario assumption, not a sourced price quote.
 - Local feeder/transformer capacity, traffic counts, and hourly session history are not present; no real grid hosting-capacity or validated demand forecast is claimed.
+
+## North-East inventory
+
+To include the eight North-Eastern states, copy `northeast_ev_chargers_map.geojson` into `data/processed/` alongside the existing North India file. The supplemental file contains 645 mapped records extracted from the BEE snapshot dated 26 October 2025. It is a dated source inventory, not live status or a verified count of unique operating sites. The `/api/health` endpoint reports `northeast_inventory_loaded` and `northeast_records` so you can confirm the file was found.
 
 ## Local data layout
 
