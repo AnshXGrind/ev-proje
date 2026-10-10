@@ -393,7 +393,7 @@ def overview(state: str | None = None) -> dict:
     reported_connectors = sum((r["number_of_connectors"] or 0) for r in rows)
     fast_records = sum(1 for r in rows if (r["charger_rating_kw"] or 0) >= 50)
     return {
-        "selected_region": normalize_state(state) if state and state != "All North India" else "All North India",
+        "selected_region": normalize_state(state) if state and state != "All North India" else "All North & Northeast India",
         "inventory_records": len(rows),
         "approx_coordinate_groups": len(coordinate_groups),
         "reported_connector_total": round(reported_connectors, 2),
