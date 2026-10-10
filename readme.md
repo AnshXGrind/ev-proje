@@ -1,10 +1,11 @@
 # EV Charging Infrastructure Planner
 
-A Python and FastAPI application for exploring a dated public EV charging-station inventory and screening possible locations for additional chargers across seven North Indian regions.
+A Python and FastAPI application for exploring a dated public EV charging-station inventory and screening possible locations for additional chargers across seven North Indian regions and the eight North-Eastern states.
 
 ## What it does
 
 - Displays charger records from the available Bureau of Energy Efficiency (BEE) snapshot.
+- Optionally loads a supplemental North-East GeoJSON covering Assam, Arunachal Pradesh, Manipur, Meghalaya, Mizoram, Nagaland, Sikkim and Tripura.
 - Filters and searches records by region and charger details.
 - Uses DBSCAN with Haversine distance to group nearby coordinate locations.
 - Generates preliminary coverage-gap candidates from reported coordinates.
@@ -22,7 +23,7 @@ From PowerShell in the repository folder:
 
 Open `http://127.0.0.1:8000`. The API documentation is at `http://127.0.0.1:8000/docs`; the route page is at `http://127.0.0.1:8000/route-planner`.
 
-The local file `data/processed/north_india_ev_chargers_map.geojson` must be present for inventory analysis. Generated data is not included in the repository.
+The local file `data/processed/north_india_ev_chargers_map.geojson` is required. To enable the eight North-Eastern states, also place `northeast_ev_chargers_map.geojson` in `data/processed/`. The supplementary BEE snapshot is supplied separately because the generated data directory is not tracked. `/api/health` reports whether it was loaded.
 
 ## Methods
 
@@ -32,6 +33,6 @@ The local file `data/processed/north_india_ev_chargers_map.geojson` must be pres
 
 ## Data and limitations
 
-The inventory source snapshot is dated 26 October 2025. It does not provide live operating status, traffic counts or charging-session history. Coordinate records are not a verified count of operating physical sites. Candidate locations are for initial review, not confirmed land parcels or approved roadside installations. Electrical feasibility requires local feeder, transformer and load data; it is not verified by the current application.
+The inventory source snapshot is dated 26 October 2025. The supplemental North-East file contains 645 mapped source records across eight states; source status is not live verified and these are not confirmed unique operating physical sites. It does not provide live operating status, traffic counts or charging-session history. Coordinate records are not a verified count of operating physical sites. Candidate locations are for initial review, not confirmed land parcels or approved roadside installations. Electrical feasibility requires local feeder, transformer and load data; it is not verified by the current application.
 
 Road routing and place/elevation lookups use external services and require internet access. Route geometry, seasonal road conditions and access restrictions must be checked before using results for deployment. OpenStreetMap data attribution and licensing must be respected.
