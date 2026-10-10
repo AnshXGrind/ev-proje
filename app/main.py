@@ -16,23 +16,32 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from sklearn.cluster import DBSCAN
 from sklearn.neighbors import BallTree
+from shapely.geometry import Point, shape
+from shapely.ops import unary_union
+from shapely.validation import make_valid
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA_PATH = ROOT / "data" / "processed" / "north_india_ev_chargers_map.geojson"
 NE_DATA_PATH = ROOT / "data" / "processed" / "northeast_ev_chargers_map.geojson"
 CENTRAL_DATA_PATH = ROOT / "data" / "processed" / "central_states_ev_chargers_map.geojson"
+INDIA_DATA_PATH = ROOT / "data" / "processed" / "india_ev_chargers_map.geojson"
+BOUNDARY_PATH = ROOT / "data" / "boundaries" / "india_states_boundary.geojson"
 NORTHEAST_STATES = ["Assam", "Arunachal Pradesh", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Sikkim", "Tripura"]
 CENTRAL_STATES = ["Bihar", "Uttar Pradesh", "Madhya Pradesh"]
 CSV_PATH = ROOT / "data" / "processed" / "north_india_ev_chargers_exact_dedup_review.csv"
 INDEX_PATH = ROOT / "app" / "static" / "index.html"
 EARTH_RADIUS_KM = 6371.0088
 STATE_ORDER = [
-    "Delhi", "Haryana", "Punjab", "Himachal Pradesh", "Uttarakhand",
-    "Jammu and Kashmir", "Ladakh",
-    "Assam", "Arunachal Pradesh", "Manipur", "Meghalaya",
-    "Mizoram", "Nagaland", "Sikkim", "Tripura",
-    "Bihar", "Uttar Pradesh", "Madhya Pradesh",
+    "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
+    "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka",
+    "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram",
+    "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu",
+    "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal",
+    "Andaman and Nicobar Islands", "Chandigarh",
+    "Dadra and Nagar Haveli and Daman and Diu", "Delhi", "Jammu and Kashmir",
+    "Ladakh", "Lakshadweep", "Puducherry",
 ]
+ALL_REGION_VALUES = {"All India", "All North India", "All covered regions"}
 # Approximate screening envelopes, deliberately broader than administrative boundaries.
 # Used only to reject obvious state-label/coordinate mismatches; not a legal boundary layer.
 STATE_ENVELOPES = {
@@ -66,6 +75,13 @@ STATE_ALIASES = {
     "Uttrakhand": "Uttarakhand",
     "Uttaranchal": "Uttarakhand",
     "Arunachal": "Arunachal Pradesh",
+    "Orissa": "Odisha",
+    "Pondicherry": "Puducherry",
+    "Andaman & Nicobar": "Andaman and Nicobar Islands",
+    "Andaman and Nicobar": "Andaman and Nicobar Islands",
+    "Dadra & Nagar Haveli and Daman & Diu": "Dadra and Nagar Haveli and Daman and Diu",
+    "Dadra and Nagar Haveli": "Dadra and Nagar Haveli and Daman and Diu",
+    "Daman and Diu": "Dadra and Nagar Haveli and Daman and Diu",
 }
 
 app = FastAPI(
@@ -81,7 +97,45 @@ app.mount("/static", StaticFiles(directory=str(ROOT / "app" / "static")), name="
 
 def normalize_state(value: Any) -> str:
     text = str(value or "").strip()
-    return STATE_ALIASES.get(text, text)
+    aliases = {key.casefold(): val for key, val in STATE_ALIASES.items()}
+    return aliases.get(text.casefold(), text)
+
+def is_all_regions(value: Any) -> bool:
+    return not value or str(value).strip() in ALL_REGION_VALUES
+
+def _boundary_feature_name(properties: dict[str, Any]) -> str:
+    for key in ("STNAME", "stname", "STATE", "state", "STATE_NAME", "state_name", "name", "shapeName", "NAME_1", "NAME"):
+        value = properties.get(key)
+        if value:
+            return normalize_state(value)
+    return ""
+
+@lru_cache(maxsize=1)
+def state_boundary_geometries() -> dict[str, Any]:
+    """Load state/UT polygons downloaded by the inventory validator."""
+    if not BOUNDARY_PATH.exists():
+        return {}
+    try:
+        payload = json.loads(BOUNDARY_PATH.read_text(encoding="utf-8-sig"))
+        by_state: dict[str, Any] = {}
+        for feature in payload.get("features", []):
+            geometry = feature.get("geometry")
+            if not geometry:
+                continue
+            state = _boundary_feature_name(feature.get("properties") or {})
+            if not state:
+                continue
+            polygon = shape(geometry)
+            if not polygon.is_valid:
+                polygon = make_valid(polygon)
+            by_state[state] = unary_union([by_state[state], polygon]) if state in by_state else polygon
+        return by_state
+    except (OSError, ValueError, TypeError):
+        return {}
+
+def point_inside_state_boundary(state: str, lat: float, lon: float) -> bool:
+    polygon = state_boundary_geometries().get(normalize_state(state))
+    return bool(polygon is not None and polygon.covers(Point(lon, lat)))
 
 
 def _num(value: Any) -> float | None:
@@ -95,6 +149,15 @@ def _num(value: Any) -> float | None:
 
 
 def _load_geojson() -> dict:
+    # A boundary-validated nationwide inventory takes precedence over legacy regional supplements.
+    if INDIA_DATA_PATH.exists():
+        with INDIA_DATA_PATH.open("r", encoding="utf-8-sig") as f:
+            india = json.load(f)
+        if india.get("type") != "FeatureCollection":
+            raise RuntimeError("India-wide inventory must be a GeoJSON FeatureCollection.")
+        india["features"] = list(india.get("features", []))
+        india["india_inventory_loaded"] = True
+        return india
     if not DATA_PATH.exists():
         raise RuntimeError(
             f"Base inventory not found at {DATA_PATH}. Put north_india_ev_chargers_map.geojson "
@@ -183,7 +246,7 @@ def load_records() -> list[dict]:
 def filtered_records(state: str | None = None, search: str | None = None,
                      charger_type: str | None = None) -> list[dict]:
     rows = load_records()
-    selected_state = normalize_state(state) if state and state != "All North India" else None
+    selected_state = normalize_state(state) if not is_all_regions(state) else None
     q = (search or "").strip().casefold()
     ct = (charger_type or "").strip().casefold()
     result = []
@@ -272,18 +335,26 @@ def _midpoint(lat1: float, lon1: float, lat2: float, lon2: float) -> tuple[float
 
 def _coverage_plan(req: PlanRequest) -> dict:
     state = normalize_state(req.state)
-    if state == "All North India":
+    if is_all_regions(state):
         state_rows = load_records()
     elif state not in STATE_ORDER:
         raise HTTPException(status_code=400, detail=f"Unknown region: {req.state}")
     else:
         state_rows = [r for r in load_records() if r["state"] == state]
-    if state == "All North India":
+    if is_all_regions(state):
         raise HTTPException(status_code=400, detail="Choose one state/UT for the placement scenario so the budget and candidate ranking remain region-specific.")
 
     all_sites = _unique_coordinate_groups(state_rows)
+    polygon = state_boundary_geometries().get(state)
     bounds = STATE_ENVELOPES.get(state)
-    sites = [s for s in all_sites if bounds and bounds[0] <= s["lat"] <= bounds[1] and bounds[2] <= s["lon"] <= bounds[3]]
+    if INDIA_DATA_PATH.exists() and polygon is None:
+        raise HTTPException(status_code=503, detail=f"Validated boundary polygon missing for {state}. Re-run scripts/validate_india_inventory.py.")
+    if polygon is not None:
+        min_lon, min_lat, max_lon, max_lat = polygon.bounds
+        bounds = (min_lat, max_lat, min_lon, max_lon)
+        sites = [site for site in all_sites if polygon.covers(Point(site["lon"], site["lat"]))]
+    else:
+        sites = [site for site in all_sites if bounds and bounds[0] <= site["lat"] <= bounds[1] and bounds[2] <= site["lon"] <= bounds[3]]
     excluded_coordinate_groups = len(all_sites) - len(sites)
     if len(sites) < 3:
         raise HTTPException(status_code=422, detail="Not enough in-envelope coordinate groups for a gap-screening analysis.")
@@ -306,7 +377,10 @@ def _coverage_plan(req: PlanRequest) -> dict:
             if pair_km < min_pair_km or pair_km > max_pair_km:
                 continue
             lat, lon = _midpoint(points[i, 0], points[i, 1], points[j, 0], points[j, 1])
-            if not (bounds[0] <= lat <= bounds[1] and bounds[2] <= lon <= bounds[3]):
+            if polygon is not None:
+                if not polygon.covers(Point(lon, lat)):
+                    continue
+            elif not (bounds[0] <= lat <= bounds[1] and bounds[2] <= lon <= bounds[3]):
                 continue
             cand = np.array([lat, lon], dtype=float)
             all_dist = haversine_km(cand, points)
@@ -394,14 +468,18 @@ def health() -> dict:
         rows = load_records()
         northeast_rows = sum(1 for row in rows if row["state"] in NORTHEAST_STATES)
         central_rows = sum(1 for row in rows if row["state"] in CENTRAL_STATES)
-        return {"status": "ok", "service": "north-central-northeast-india-ev-planner", "inventory_loaded": True,
+        nationwide = INDIA_DATA_PATH.exists()
+        return {"status": "ok", "service": "india-wide-ev-charging-planner" if nationwide else "north-central-northeast-india-ev-planner", "inventory_loaded": True,
                 "inventory_records": len(rows), "states": len({r['state'] for r in rows}),
-                "northeast_inventory_loaded": NE_DATA_PATH.exists(),
+                "india_inventory_loaded": nationwide,
+                "boundary_geometry_loaded": BOUNDARY_PATH.exists(),
+                "boundary_validation_status": "state-polygon point-in-polygon checked" if nationwide and BOUNDARY_PATH.exists() else ("validated inventory; local boundary file missing" if nationwide else "legacy regional inventory"),
+                "northeast_inventory_loaded": nationwide or NE_DATA_PATH.exists(),
                 "northeast_records": northeast_rows,
-                "central_inventory_loaded": CENTRAL_DATA_PATH.exists(),
+                "central_inventory_loaded": nationwide or CENTRAL_DATA_PATH.exists(),
                 "central_records": central_rows,
                 "source_snapshot": "2025-10-26",
-                "data_file": str(DATA_PATH.relative_to(ROOT)),
+                "data_file": str((INDIA_DATA_PATH if nationwide else DATA_PATH).relative_to(ROOT)),
                 "northeast_data_file": str(NE_DATA_PATH.relative_to(ROOT)) if NE_DATA_PATH.exists() else None,
                 "central_data_file": str(CENTRAL_DATA_PATH.relative_to(ROOT)) if CENTRAL_DATA_PATH.exists() else None}
     except Exception as exc:
@@ -416,7 +494,7 @@ def overview(state: str | None = None) -> dict:
     reported_connectors = sum((r["number_of_connectors"] or 0) for r in rows)
     fast_records = sum(1 for r in rows if (r["charger_rating_kw"] or 0) >= 50)
     return {
-        "selected_region": normalize_state(state) if state and state != "All North India" else "All North & Northeast India",
+        "selected_region": normalize_state(state) if not is_all_regions(state) else "All India",
         "inventory_records": len(rows),
         "approx_coordinate_groups": len(coordinate_groups),
         "reported_connector_total": round(reported_connectors, 2),
@@ -435,7 +513,7 @@ def states() -> dict:
 
 
 @app.get("/api/stations")
-def stations(state: str = "All North India", search: str = "", charger_type: str = "",
+def stations(state: str = "All India", search: str = "", charger_type: str = "",
              limit: int = Query(default=5000, ge=1, le=10000), offset: int = Query(default=0, ge=0)) -> dict:
     rows = filtered_records(state, search, charger_type)
     page = rows[offset:offset + limit]
@@ -450,7 +528,7 @@ def stations(state: str = "All North India", search: str = "", charger_type: str
 
 
 @app.get("/api/analytics")
-def analytics(state: str = "All North India") -> dict:
+def analytics(state: str = "All India") -> dict:
     rows = filtered_records(state)
     state_counts = [{"label": r["state"], "count": r["records"]} for r in _state_metrics(rows) if r["records"] > 0]
     power_bands = Counter()
@@ -468,7 +546,7 @@ def analytics(state: str = "All North India") -> dict:
             band = "≥50 kW"
         power_bands[band] += 1
     return {
-        "state": normalize_state(state) if state != "All North India" else state,
+        "state": normalize_state(state) if not is_all_regions(state) else "All India",
         "records_by_state": state_counts,
         "charger_types": _distribution(rows, "charger_type", 8),
         "operators": _distribution(rows, "cpo_name", 8),
@@ -479,25 +557,29 @@ def analytics(state: str = "All North India") -> dict:
 
 
 @app.get("/api/quality")
-def quality(state: str = "All North India") -> dict:
+def quality(state: str = "All India") -> dict:
     rows = filtered_records(state)
     groups = _unique_coordinate_groups(rows)
     out_of_envelope = 0
     for row in rows:
+        polygon = state_boundary_geometries().get(row["state"])
         bounds = STATE_ENVELOPES.get(row["state"])
-        if bounds and not (bounds[0] <= row["lat"] <= bounds[1] and bounds[2] <= row["lon"] <= bounds[3]):
+        if polygon is not None:
+            if not polygon.covers(Point(row["lon"], row["lat"])):
+                out_of_envelope += 1
+        elif bounds and not (bounds[0] <= row["lat"] <= bounds[1] and bounds[2] <= row["lon"] <= bounds[3]):
             out_of_envelope += 1
     missing_power = sum(1 for r in rows if r["charger_rating_kw"] is None)
     missing_operator = sum(1 for r in rows if r["cpo_name"] == "Not recorded")
     return {
-        "state": normalize_state(state) if state != "All North India" else state,
+        "state": normalize_state(state) if not is_all_regions(state) else state,
         "inventory_records": len(rows),
         "approx_coordinate_groups": len(groups),
         "missing_power_rating_records": missing_power,
         "missing_operator_records": missing_operator,
         "records_outside_approximate_region_envelope": out_of_envelope,
         "source_snapshot": "2025-10-26",
-        "note": "Broad bounding envelopes only identify potential state/coordinate mismatches; they do not replace an authoritative state-boundary dataset."
+        "note": "When the India-wide inventory is installed, point-in-polygon checks use the downloaded Survey of India/NIC state and UT boundary layer; legacy regional data uses broad envelopes only."
     }
 
 
