@@ -61,6 +61,8 @@ def test_optional_central_inventory_loads_alongside_base(tmp_path, monkeypatch):
     monkeypatch.setattr(main, "DATA_PATH", base_path)
     monkeypatch.setattr(main, "NE_DATA_PATH", ne_path)
     monkeypatch.setattr(main, "CENTRAL_DATA_PATH", central_path)
+    monkeypatch.setattr(main, "INDIA_DATA_PATH", tmp_path / "india_ev_chargers_map.geojson")
+    monkeypatch.setattr(main, "INDIA_BOUNDARY_PATH", tmp_path / "india_state_boundaries.geojson")
     main.load_records.cache_clear()
     try:
         records = main.load_records()
@@ -99,6 +101,8 @@ def test_route_inventory_loader_includes_central_states(tmp_path, monkeypatch):
     monkeypatch.setattr(route_api, "DATA_PATH", base_path)
     monkeypatch.setattr(route_api, "NE_DATA_PATH", ne_path)
     monkeypatch.setattr(route_api, "CENTRAL_DATA_PATH", central_path)
+    monkeypatch.setattr(route_api, "INDIA_DATA_PATH", tmp_path / "india_ev_chargers_map.geojson")
+    monkeypatch.setattr(route_api, "INDIA_BOUNDARY_PATH", tmp_path / "india_state_boundaries.geojson")
     route_api._inventory_groups.cache_clear()
     try:
         groups = route_api._inventory_groups()
