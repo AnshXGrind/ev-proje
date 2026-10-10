@@ -18,3 +18,51 @@ regions:
     place: "Mysuru, Karnataka, India"
     profile: "southern_urban_plateau"
     center: [12.2958, 76.6394]
+
+  north_east_assam_guwahati:
+    display_name: "Guwahati - Assam regional hub"
+    place: "Guwahati, Assam, India"
+    profile: "northeast_urban_transport"
+    center: [26.1445, 91.7362]
+
+  north_east_arunachal_itanagar:
+    display_name: "Itanagar - Arunachal Pradesh"
+    place: "Itanagar, Arunachal Pradesh, India"
+    profile: "northeast_hill_road"
+    center: [27.0844, 93.6053]
+
+  north_east_manipur_imphal:
+    display_name: "Imphal - Manipur regional hub"
+    place: "Imphal, Manipur, India"
+    profile: "northeast_urban_transport"
+    center: [24.8170, 93.9368]
+
+  north_east_meghalaya_shillong:
+    display_name: "Shillong - Meghalaya hill region"
+    place: "Shillong, Meghalaya, India"
+    profile: "northeast_hill_road"
+    center: [25.5788, 91.8933]
+
+  north_east_mizoram_aizawl:
+    display_name: "Aizawl - Mizoram hill region"
+    place: "Aizawl, Mizoram, India"
+    profile: "northeast_hill_road"
+    center: [23.7271, 92.7176]
+
+  north_east_nagaland_kohima:
+    display_name: "Kohima - Nagaland hill region"
+    place: "Kohima, Nagaland, India"
+    profile: "northeast_hill_road"
+    center: [25.6751, 94.1086]
+
+  north_east_sikkim_gangtok:
+    display_name: "Gangtok - Sikkim mountain region"
+    place: "Gangtok, Sikkim, India"
+    profile: "northeast_mountain_tourism"
+    center: [27.3314, 88.6138]
+
+  north_east_tripura_agartala:
+    display_name: "Agartala - Tripura regional hub"
+    place: "Agartala, Tripura, India"
+    profile: "northeast_urban_transport"
+    center: [23.8315, 91.2868]
