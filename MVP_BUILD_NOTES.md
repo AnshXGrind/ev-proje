@@ -11,7 +11,7 @@
 
 ## Data requirements
 
-The local file `data/processed/north_india_ev_chargers_map.geojson` is required for inventory analysis and is not stored in this repository. The inventory is a dated public snapshot; it does not provide live operating status or charging-session history.
+The local file `data/processed/north_india_ev_chargers_map.geojson` is required. The optional `data/processed/northeast_ev_chargers_map.geojson` file enables Assam, Arunachal Pradesh, Manipur, Meghalaya, Mizoram, Nagaland, Sikkim and Tripura. The supplemental file contains 645 mapped source records from the BEE snapshot labelled through 26 October 2025; it is not a live status feed or a verified count of physical operating sites. The inventory does not provide charging-session history.
 
 ## Limits
 
