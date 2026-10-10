@@ -511,6 +511,9 @@ def plan_export(request: PlanRequest) -> StreamingResponse:
                              headers={"Content-Disposition": "attachment; filename=north_india_ev_site_screening_plan.csv"})
 
 
+from app.route_api import router as route_planner_router
+app.include_router(route_planner_router)
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("app.main:app", host="127.0.0.1", port=8000, reload=False)
