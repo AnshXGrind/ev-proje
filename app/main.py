@@ -310,7 +310,7 @@ def _coverage_plan(req: PlanRequest) -> dict:
     return {
         "state": state,
         "method": "Greedy, spatially diversified midpoint screening between reported locations with large straight-line separation.",
-        "model_type": "Deterministic geospatial optimization heuristic",
+        "model_type": "Deterministic coordinate-based coverage-gap screening",
         "candidate_pool_size": len(candidates),
         "requested_budget_lakh": req.budget_lakh,
         "assumed_cost_per_site_lakh": req.cost_per_site_lakh,
@@ -447,15 +447,15 @@ def quality(state: str = "All North India") -> dict:
 def model_info() -> dict:
     return {
         "spatial_model": "DBSCAN (Haversine distance)",
-        "purpose": "Discover spatial concentrations of mapped inventory coordinate groups.",
+        "purpose": "Group nearby mapped inventory coordinate locations.",
         "not_a_demand_model": True,
         "inputs": ["latitude", "longitude"],
         "limitations": [
             "Dense points may represent multiple connector records at one physical site.",
             "Clusters are spatial concentration, not demand, traffic, utilization, or grid capacity.",
         ],
-        "planner": "Greedy spatially-diversified midpoint coverage-gap screening heuristic",
-        "forecasting": "No trained demand forecasting model is claimed because time-series charging session data was not supplied."
+        "planner": "Midpoint coverage-gap screening based on straight-line distances",
+        "forecasting": "A validated demand forecast is not calculated because traffic observations and charging-session time series are unavailable."
     }
 
 
@@ -488,7 +488,7 @@ def clusters(state: str = "Delhi", eps_km: float = Query(default=3.0, ge=0.5, le
     return {"state": state, "clusters": output, "cluster_count": len(output),
             "noise_locations": int((labels == -1).sum()), "coordinate_groups": len(sites),
             "eps_km": eps_km, "min_samples": min_samples,
-            "note": "DBSCAN is an unsupervised spatial-clustering model, not a trained EV-demand predictor."}
+            "note": "DBSCAN groups nearby coordinates; clusters describe geographic concentration, not EV demand."}
 
 
 @app.post("/api/plan")
