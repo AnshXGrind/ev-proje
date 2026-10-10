@@ -33,6 +33,7 @@ router = APIRouter(tags=["route-planner"])
 ROOT = Path(__file__).resolve().parents[1]
 DATA_PATH = ROOT / "data" / "processed" / "north_india_ev_chargers_map.geojson"
 NE_DATA_PATH = ROOT / "data" / "processed" / "northeast_ev_chargers_map.geojson"
+CENTRAL_DATA_PATH = ROOT / "data" / "processed" / "central_states_ev_chargers_map.geojson"
 ROUTE_HTML = ROOT / "app" / "static" / "route_planner.html"
 EARTH_RADIUS_KM = 6371.0088
 APP_UA = "GRIDPULSE-EVPlanner/0.4 (research prototype; github.com/AnshXGrind/ev-proje)"
@@ -45,6 +46,7 @@ STATE_ORDER = [
     "Jammu and Kashmir", "Ladakh",
     "Assam", "Arunachal Pradesh", "Manipur", "Meghalaya",
     "Mizoram", "Nagaland", "Sikkim", "Tripura",
+    "Bihar", "Uttar Pradesh", "Madhya Pradesh",
 ]
 STATE_ALIASES = {
     "Jammu & Kashmir": "Jammu and Kashmir", "Jammu and kashmir": "Jammu and Kashmir",
@@ -70,6 +72,10 @@ STATE_ENVELOPES = {
     "Nagaland": (25.10, 27.20, 93.30, 95.40),
     "Sikkim": (26.90, 28.20, 88.00, 88.95),
     "Tripura": (22.90, 24.60, 91.10, 92.50),
+    # Broad coordinate envelopes for initial screening, not official boundaries.
+    "Bihar": (24.00, 27.60, 83.20, 88.30),
+    "Uttar Pradesh": (23.70, 30.50, 77.00, 84.70),
+    "Madhya Pradesh": (21.00, 26.95, 74.00, 82.85),
 }
 
 # Transparent screening parameters, deliberately configurable in one place.
@@ -178,6 +184,12 @@ def _inventory_groups() -> list[dict[str, Any]]:
             if northeast.get("type") != "FeatureCollection":
                 raise HTTPException(status_code=500, detail="Northeast station file is not a GeoJSON FeatureCollection.")
             features.extend(northeast.get("features", []))
+        if CENTRAL_DATA_PATH.exists():
+            with CENTRAL_DATA_PATH.open("r", encoding="utf-8-sig") as f:
+                central = json.load(f)
+            if central.get("type") != "FeatureCollection":
+                raise HTTPException(status_code=500, detail="Central states station file is not a GeoJSON FeatureCollection.")
+            features.extend(central.get("features", []))
     except (OSError, json.JSONDecodeError) as exc:
         raise HTTPException(status_code=500, detail=f"Could not read station GeoJSON: {exc}") from exc
 

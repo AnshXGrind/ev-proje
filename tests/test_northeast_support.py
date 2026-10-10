@@ -61,6 +61,7 @@ def test_optional_northeast_inventory_is_loaded_alongside_base(tmp_path, monkeyp
 
     monkeypatch.setattr(main, "DATA_PATH", base_path)
     monkeypatch.setattr(main, "NE_DATA_PATH", ne_path)
+    monkeypatch.setattr(main, "CENTRAL_DATA_PATH", tmp_path / "central_states_ev_chargers_map.geojson")
     main.load_records.cache_clear()
     try:
         records = main.load_records()

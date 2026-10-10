@@ -9,9 +9,11 @@ def test_health_loads_inventory():
     body = response.json()
     assert body['inventory_loaded'] is True
     assert body['inventory_records'] > 0
-    assert 7 <= body['states'] <= 15
+    assert 7 <= body['states'] <= 18
     assert 'northeast_inventory_loaded' in body
     assert 'northeast_records' in body
+    assert 'central_inventory_loaded' in body
+    assert 'central_records' in body
 
 def test_station_filter_returns_north_india_records():
     response = client.get('/api/stations', params={'state': 'Himachal Pradesh', 'limit': 5})
