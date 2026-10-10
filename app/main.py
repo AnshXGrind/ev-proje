@@ -19,12 +19,16 @@ from sklearn.neighbors import BallTree
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA_PATH = ROOT / "data" / "processed" / "north_india_ev_chargers_map.geojson"
+NE_DATA_PATH = ROOT / "data" / "processed" / "northeast_ev_chargers_map.geojson"
+NORTHEAST_STATES = ["Assam", "Arunachal Pradesh", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Sikkim", "Tripura"]
 CSV_PATH = ROOT / "data" / "processed" / "north_india_ev_chargers_exact_dedup_review.csv"
 INDEX_PATH = ROOT / "app" / "static" / "index.html"
 EARTH_RADIUS_KM = 6371.0088
 STATE_ORDER = [
     "Delhi", "Haryana", "Punjab", "Himachal Pradesh", "Uttarakhand",
     "Jammu and Kashmir", "Ladakh",
+    "Assam", "Arunachal Pradesh", "Manipur", "Meghalaya",
+    "Mizoram", "Nagaland", "Sikkim", "Tripura",
 ]
 # Approximate screening envelopes, deliberately broader than administrative boundaries.
 # Used only to reject obvious state-label/coordinate mismatches; not a legal boundary layer.
@@ -36,6 +40,15 @@ STATE_ENVELOPES = {
     "Uttarakhand": (28.50, 31.60, 77.40, 81.20),
     "Jammu and Kashmir": (32.00, 35.95, 73.35, 79.35),
     "Ladakh": (32.00, 36.25, 75.00, 80.60),
+    # Broad coordinate envelopes for screening only; not administrative boundaries.
+    "Assam": (24.00, 28.30, 89.50, 96.20),
+    "Arunachal Pradesh": (26.50, 29.80, 91.40, 97.50),
+    "Manipur": (23.80, 25.80, 93.00, 94.90),
+    "Meghalaya": (25.00, 26.30, 89.50, 92.80),
+    "Mizoram": (21.80, 24.60, 91.80, 93.50),
+    "Nagaland": (25.10, 27.20, 93.30, 95.40),
+    "Sikkim": (26.90, 28.20, 88.00, 88.95),
+    "Tripura": (22.90, 24.60, 91.10, 92.50),
 }
 
 STATE_ALIASES = {
@@ -45,14 +58,15 @@ STATE_ALIASES = {
     "J&K": "Jammu and Kashmir",
     "Uttrakhand": "Uttarakhand",
     "Uttaranchal": "Uttarakhand",
+    "Arunachal": "Arunachal Pradesh",
 }
 
 app = FastAPI(
-    title="North India EV Infrastructure Planner",
+    title="North & Northeast India EV Charging Planner",
     version="0.2.0",
     description=(
         "EV charging inventory, spatial clustering and "
-        "initial coverage-gap screening for seven North Indian regions."
+        "initial coverage-gap screening for 15 regions across North and Northeast India."
     ),
 )
 app.mount("/static", StaticFiles(directory=str(ROOT / "app" / "static")), name="static")
@@ -76,13 +90,29 @@ def _num(value: Any) -> float | None:
 def _load_geojson() -> dict:
     if not DATA_PATH.exists():
         raise RuntimeError(
-            f"Inventory not found at {DATA_PATH}. Put north_india_ev_chargers_map.geojson "
+            f"Base inventory not found at {DATA_PATH}. Put north_india_ev_chargers_map.geojson "
             "inside data/processed/."
         )
     with DATA_PATH.open("r", encoding="utf-8-sig") as f:
         data = json.load(f)
     if data.get("type") != "FeatureCollection":
-        raise RuntimeError("Inventory must be a GeoJSON FeatureCollection.")
+        raise RuntimeError("Base inventory must be a GeoJSON FeatureCollection.")
+
+    # Keep the original inventory separate and load the NE BEE snapshot as a supplement.
+    # Older local setups continue to work when the optional file has not been copied yet.
+    features = list(data.get("features", []))
+    if NE_DATA_PATH.exists():
+        with NE_DATA_PATH.open("r", encoding="utf-8-sig") as f:
+            northeast = json.load(f)
+        if northeast.get("type") != "FeatureCollection":
+            raise RuntimeError("Northeast inventory must be a GeoJSON FeatureCollection.")
+        features.extend(northeast.get("features", []))
+        data["northeast_inventory_loaded"] = True
+        data["northeast_feature_count"] = len(northeast.get("features", []))
+    else:
+        data["northeast_inventory_loaded"] = False
+        data["northeast_feature_count"] = 0
+    data["features"] = features
     return data
 
 
@@ -343,9 +373,14 @@ def index() -> HTMLResponse:
 def health() -> dict:
     try:
         rows = load_records()
-        return {"status": "ok", "service": "north-india-ev-planner", "inventory_loaded": True,
+        northeast_rows = sum(1 for row in rows if row["state"] in NORTHEAST_STATES)
+        return {"status": "ok", "service": "north-and-northeast-india-ev-planner", "inventory_loaded": True,
                 "inventory_records": len(rows), "states": len({r['state'] for r in rows}),
-                "source_snapshot": "2025-10-26", "data_file": str(DATA_PATH.relative_to(ROOT))}
+                "northeast_inventory_loaded": NE_DATA_PATH.exists(),
+                "northeast_records": northeast_rows,
+                "source_snapshot": "2025-10-26",
+                "data_file": str(DATA_PATH.relative_to(ROOT)),
+                "northeast_data_file": str(NE_DATA_PATH.relative_to(ROOT)) if NE_DATA_PATH.exists() else None}
     except Exception as exc:
         return {"status": "error", "inventory_loaded": False, "detail": str(exc)}
 
