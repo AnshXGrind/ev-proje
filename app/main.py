@@ -21,6 +21,7 @@ from app.geo_boundaries import point_inside_india, point_inside_state, normalize
 ROOT = Path(__file__).resolve().parents[1]
 DATA_PATH = ROOT / "data" / "processed" / "north_india_ev_chargers_map.geojson"
 INDIA_DATA_PATH = ROOT / "data" / "processed" / "india_ev_chargers_map.geojson"
+INDIA_RAW_PATH = ROOT / "data" / "raw" / "india_ev_chargers_raw.geojson"
 INDIA_BOUNDARY_PATH = ROOT / "data" / "processed" / "india_state_boundaries.geojson"
 NE_DATA_PATH = ROOT / "data" / "processed" / "northeast_ev_chargers_map.geojson"
 CENTRAL_DATA_PATH = ROOT / "data" / "processed" / "central_states_ev_chargers_map.geojson"
@@ -128,6 +129,12 @@ def _load_geojson() -> dict:
         india["central_feature_count"] = 0
         return india
 
+    if INDIA_RAW_PATH.exists() and not INDIA_DATA_PATH.exists():
+        raise RuntimeError(
+            "The national raw inventory is present, but the boundary-validated India inventory is missing. "
+            "Run scripts/prepare_india_inventory.py and review data/reports/india_ev_chargers_boundary_audit.csv. "
+            "GRIDPULSE will not silently show a partial regional inventory as nationwide coverage."
+        )
     if not DATA_PATH.exists():
         raise RuntimeError(
             f"Base inventory not found at {DATA_PATH}. Put north_india_ev_chargers_map.geojson "
