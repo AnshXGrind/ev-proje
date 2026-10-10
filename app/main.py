@@ -572,7 +572,7 @@ def quality(state: str = "All India") -> dict:
     missing_power = sum(1 for r in rows if r["charger_rating_kw"] is None)
     missing_operator = sum(1 for r in rows if r["cpo_name"] == "Not recorded")
     return {
-        "state": normalize_state(state) if not is_all_regions(state) else state,
+        "state": normalize_state(state) if not is_all_regions(state) else "All India",
         "inventory_records": len(rows),
         "approx_coordinate_groups": len(groups),
         "missing_power_rating_records": missing_power,
@@ -602,7 +602,7 @@ def model_info() -> dict:
 @app.get("/api/clusters")
 def clusters(state: str = "Delhi", eps_km: float = Query(default=3.0, ge=0.5, le=20),
              min_samples: int = Query(default=4, ge=2, le=30)) -> dict:
-    if state == "All North India":
+    if is_all_regions(state):
         rows = load_records()
     else:
         state = normalize_state(state)
