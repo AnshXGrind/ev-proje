@@ -39,7 +39,7 @@ To include the eight North-Eastern states, copy `northeast_ev_chargers_map.geojs
 
 ## Bihar, Uttar Pradesh and Madhya Pradesh inventory
 
-Copy `central_states_ev_chargers_map.geojson` into `data/processed/` alongside the existing North India and North-East files. It contains 4,088 mapped source records extracted from the BEE snapshot labelled through 26 October 2025. The records are not a live status feed or a verified count of unique operating physical sites. The `/api/health` endpoint reports `central_inventory_loaded` and `central_records` so you can confirm the file was found.
+Copy `central_states_ev_chargers_map.geojson` into `data/processed/` alongside the existing North India and North-East files. It contains 4,080 mapped source records extracted from the BEE snapshot labelled through 26 October 2025. The records are not a live status feed or a verified count of unique operating physical sites. The `/api/health` endpoint reports `central_inventory_loaded` and `central_records` so you can confirm the file was found.
 
 ## Local data layout
 
