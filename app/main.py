@@ -85,11 +85,11 @@ STATE_ALIASES = {
 }
 
 app = FastAPI(
-    title="North, Central & Northeast India EV Charging Planner",
-    version="0.2.0",
+    title="India-wide EV Charging Infrastructure Planner",
+    version="0.4.0",
     description=(
-        "EV charging inventory, spatial clustering and "
-        "initial coverage-gap screening for 18 regions across North, Central and Northeast India."
+        "India-wide EV charger inventory, state-boundary point validation, spatial clustering, "
+        "and preliminary coverage-gap screening. Inventory rows come from a dated 2025-10-26 source snapshot."
     ),
 )
 app.mount("/static", StaticFiles(directory=str(ROOT / "app" / "static")), name="static")
@@ -239,7 +239,7 @@ def load_records() -> list[dict]:
         }
         rows.append(record)
     if not rows:
-        raise RuntimeError("No valid North India point records were found in the GeoJSON.")
+        raise RuntimeError("No valid India point records were found in the GeoJSON.")
     return rows
 
 
@@ -460,6 +460,20 @@ def index() -> HTMLResponse:
     if not INDEX_PATH.exists():
         return HTMLResponse("<h1>Frontend missing</h1><p>app/static/index.html not found.</p>", status_code=500)
     return HTMLResponse(INDEX_PATH.read_text(encoding="utf-8"))
+
+
+@app.get("/api/boundaries")
+def boundaries() -> dict:
+    """Return the locally installed state/UT boundary GeoJSON used for validation."""
+    if not BOUNDARY_PATH.exists():
+        raise HTTPException(status_code=404, detail="India state/UT boundary layer is not installed yet.")
+    try:
+        payload = json.loads(BOUNDARY_PATH.read_text(encoding="utf-8-sig"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise HTTPException(status_code=500, detail=f"Could not read India state/UT boundary layer: {exc}") from exc
+    if payload.get("type") != "FeatureCollection" or len(payload.get("features", [])) < 30:
+        raise HTTPException(status_code=500, detail="India boundary layer is invalid or incomplete.")
+    return payload
 
 
 @app.get("/api/health")
