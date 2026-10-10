@@ -44,10 +44,11 @@ def test_boundary_loader_requires_all_36_state_ut_polygons(tmp_path):
 def test_point_in_india_and_state_polygon(tmp_path):
     path = tmp_path / "bounds.geojson"
     _write_test_boundaries(path)
+    ap_lon = STATE_NAMES.index("Andhra Pradesh") * 10.0 + 2.0
     assert point_inside_india(2, 2, path)
-    assert point_inside_state("Andhra Pradesh", 2, 2, path)
+    assert point_inside_state("Andhra Pradesh", 2, ap_lon, path)
     assert not point_inside_india(20, 20, path)
-    assert not point_inside_state("Andhra Pradesh", 2, 12, path)
+    assert not point_inside_state("Andhra Pradesh", 2, 2, path)
     assert matching_states(2, 2, path) == ["Andaman and Nicobar Islands"]
 
 
