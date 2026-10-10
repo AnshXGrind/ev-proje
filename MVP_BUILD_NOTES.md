@@ -5,6 +5,7 @@
 - FastAPI serves the dashboard and JSON endpoints.
 - The dashboard provides inventory summaries, region filters, station search, CSV export and a map of reported charger locations.
 - DBSCAN groups approximate charger coordinates by geographic proximity.
+- Inventory filters and route corridor matching support the seven North Indian regions plus all eight North-Eastern states when the supplemental GeoJSON is present.
 - The baseline planner ranks midpoint candidates using straight-line distances and user-provided budget assumptions.
 - The Route Planner compares a selected driving route with nearby inventory and sampled elevation data.
 
