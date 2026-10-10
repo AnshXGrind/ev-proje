@@ -36,6 +36,7 @@ DATA_PATH = ROOT / "data" / "processed" / "north_india_ev_chargers_map.geojson"
 NE_DATA_PATH = ROOT / "data" / "processed" / "northeast_ev_chargers_map.geojson"
 CENTRAL_DATA_PATH = ROOT / "data" / "processed" / "central_states_ev_chargers_map.geojson"
 INDIA_DATA_PATH = ROOT / "data" / "processed" / "india_ev_chargers_map.geojson"
+INDIA_RAW_PATH = ROOT / "data" / "raw" / "india_ev_chargers_raw.geojson"
 INDIA_BOUNDARY_PATH = ROOT / "data" / "processed" / "india_state_boundaries.geojson"
 ROUTE_HTML = ROOT / "app" / "static" / "route_planner.html"
 EARTH_RADIUS_KM = 6371.0088
@@ -181,6 +182,11 @@ def _normalize_state(value: Any) -> str:
 @lru_cache(maxsize=1)
 def _inventory_groups() -> list[dict[str, Any]]:
     """Load approximate coordinate groups from the dated local inventory."""
+    if INDIA_RAW_PATH.exists() and not INDIA_DATA_PATH.exists():
+        raise HTTPException(
+            status_code=503,
+            detail="The national raw inventory is present but boundary validation is incomplete. Run scripts/prepare_india_inventory.py before route analysis.",
+        )
     if not INDIA_DATA_PATH.exists() and not DATA_PATH.exists():
         raise HTTPException(status_code=503, detail=f"Charging inventory missing at {INDIA_DATA_PATH} or {DATA_PATH}. Prepare the India-wide inventory or copy the legacy North India file.")
     try:
