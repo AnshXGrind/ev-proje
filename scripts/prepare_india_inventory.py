@@ -12,6 +12,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from pyproj import Transformer
+from shapely.geometry import mapping, shape
+from shapely.ops import transform as transform_geometry
+
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE_PATH = ROOT / "data" / "raw" / "india_ev_chargers_raw.geojson"
 BOUNDARY_ZIP_PATH = ROOT / "data" / "raw" / "state_NWIC_GeoJSON.zip"
@@ -54,11 +58,72 @@ def _download_boundary() -> None:
             f"Provider error: {exc}"
         ) from exc
 
+def _geometry_coordinates_are_wgs84(data: dict[str, Any]) -> bool:
+    """Return true only when usable geometry bounds look like longitude/latitude degrees."""
+    features = data.get("features") or []
+    if not features:
+        return False
+    usable = 0
+    for feature in features:
+        geometry = (feature or {}).get("geometry")
+        if not geometry:
+            continue
+        try:
+            min_x, min_y, max_x, max_y = shape(geometry).bounds
+        except Exception:
+            return False
+        if not (-180 <= min_x <= 180 and -180 <= max_x <= 180
+                and -90 <= min_y <= 90 and -90 <= max_y <= 90):
+            return False
+        usable += 1
+    return usable > 0
+
+
+def _convert_boundary_data_to_wgs84(data: dict[str, Any]) -> dict[str, Any]:
+    """Convert NWIC's projected EPSG:7755 geometries to WGS84 lon/lat for point-in-polygon use."""
+    metadata = data.setdefault("metadata", {})
+    if _geometry_coordinates_are_wgs84(data):
+        metadata["coordinate_reference_system"] = "EPSG:4326"
+        return data
+
+    # The official NWIC state resource is distributed in WGS 84 / India NSF Lambert
+    # Conformal Conic (EPSG:7755), whose coordinates are metres, not degrees.
+    transformer = Transformer.from_crs("EPSG:7755", "EPSG:4326", always_xy=True)
+    converted = 0
+    for feature in data.get("features", []):
+        geometry = (feature or {}).get("geometry")
+        if not geometry:
+            continue
+        geom = shape(geometry)
+        projected = transform_geometry(transformer.transform, geom)
+        if projected.is_empty or not projected.is_valid:
+            projected = projected.buffer(0)
+        if projected.is_empty or not projected.is_valid:
+            raise RuntimeError(
+                f"Could not reproject boundary feature {(feature.get('properties') or {}).get('state_name', '')!r}."
+            )
+        feature["geometry"] = mapping(projected)
+        converted += 1
+
+    if not _geometry_coordinates_are_wgs84(data):
+        raise RuntimeError(
+            "Boundary reprojection did not produce longitude/latitude coordinates. "
+            "Refusing to continue with an unknown or inconsistent source CRS."
+        )
+    metadata["source_coordinate_reference_system"] = "EPSG:7755 (WGS 84 / India NSF LCC)"
+    metadata["coordinate_reference_system"] = "EPSG:4326 (WGS 84 longitude/latitude)"
+    metadata["reprojected_feature_count"] = converted
+    return data
+
+
 def _extract_boundaries() -> None:
     if BOUNDARY_PATH.exists():
         try:
-            load_state_boundaries(BOUNDARY_PATH)
-            return
+            existing = json.loads(BOUNDARY_PATH.read_text(encoding="utf-8-sig"))
+            if _geometry_coordinates_are_wgs84(existing):
+                load_state_boundaries(BOUNDARY_PATH)
+                return
+            print("Existing boundary file uses projected/non-geographic coordinates; rebuilding in WGS84.")
         except Exception:
             print("Existing boundary file is incomplete or invalid; rebuilding from source archive.")
     if not BOUNDARY_ZIP_PATH.exists():
@@ -83,14 +148,18 @@ def _extract_boundaries() -> None:
         )
     candidates.sort(reverse=True, key=lambda item: item[0])
     _, chosen_name, data = candidates[0]
+    data = _convert_boundary_data_to_wgs84(data)
     BOUNDARY_PATH.parent.mkdir(parents=True, exist_ok=True)
     data.setdefault("metadata", {})
     data["metadata"]["source"] = SOURCE_DESCRIPTION
     data["metadata"]["source_url"] = BOUNDARY_URL
     data["metadata"]["archive_member"] = chosen_name
     BOUNDARY_PATH.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+    # Clear path-keyed geometry cache before re-reading a file that may have been rebuilt.
+    from app.geo_boundaries import _load_state_boundaries_cached
+    _load_state_boundaries_cached.cache_clear()
     polygons, _, _ = load_state_boundaries(BOUNDARY_PATH)
-    print(f"Loaded {len(polygons)} state/UT geometries from {chosen_name}.")
+    print(f"Loaded {len(polygons)} state/UT geometries from {chosen_name} in WGS84 coordinates.")
 
 def _number(value: Any) -> float | None:
     try:
