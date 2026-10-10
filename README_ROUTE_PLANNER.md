@@ -26,7 +26,7 @@ This module adds a Route Planner page to the existing `AnshXGrind/ev-proje` Pyth
 - Elevation samples from Open-Meteo/Copernicus GLO-90, terrain segmentation and a remote/seasonal risk override.
 - A spacing formula based on terrain class, usable vehicle range, reserve, conservative/base/accelerated adoption scenario, and optional traffic/EV-share inputs.
 - Side-aware existing inventory proximity checks and candidate coordinates. The dated BEE inventory is loaded locally; the API does not scrape charging stations.
-- A 20 km general public-charger reference and 100 km long-range/heavy-duty fast-charger reference from EVCI-2024 guidance are reported separately from the more conservative adaptive model. It does not certify regulatory compliance.
+- A 20 km general public-charger reference and 100 km long-range/heavy-duty fast-charger reference from EVCI-2024 guidance are reported separately from the more conservative spacing rules. It does not certify regulatory compliance.
 - Optional illustrative future public charging sessions/day and energy/day when users provide traffic, EV share, public-charge share, growth and session-energy assumptions.
 - CSV export for candidates, full JSON export, and a downloadable grid-feasibility utility-data template.
 
