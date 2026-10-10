@@ -1,6 +1,6 @@
-"""Landscape-aware EV corridor planning for GRIDPULSE.
+"""Route-based EV charger screening.
 
-This is an evidence-aware planning screen, not a trained traffic forecast or a
+This is an initial planning screen, not a traffic forecast or a
 power-flow study. It combines OSRM road geometry, sampled elevation, a
 transparent terrain/range/scenario model, and the dated BEE charger inventory.
 Public geocoding/routing/elevation endpoints are best-effort and must not be
@@ -679,7 +679,7 @@ def _plan_spacing(route_line: LineString, route_distance_km: float, line_length_
         cand["nearest_inventory_state"] = near["state"]
         cand["nearest_inventory_location"] = near["location"]
         cand["requirements_label"] = "; ".join(cand["requirements"])
-        cand["reason"] = f"Adaptive corridor screen at route km {cand['route_km']}; nearest reported inventory coordinate is {cand['nearest_inventory_km']} km away."
+        cand["reason"] = f"Route screening candidate at route km {cand['route_km']}; nearest reported inventory coordinate is {cand['nearest_inventory_km']} km away."
         cand["grid_readiness"] = "UNVERIFIED — utility feeder/transformer data absent"
     candidates.sort(key=lambda c: c["route_km"])
     for i, cand in enumerate(candidates, 1):
