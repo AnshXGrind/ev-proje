@@ -38,6 +38,7 @@ _ALIASES = {
     "ut of d&nh and d&d": "Dadra and Nagar Haveli and Daman and Diu",
     "ut of d&nh and d&d.": "Dadra and Nagar Haveli and Daman and Diu",
     "dadra and nagar haveli": "Dadra and Nagar Haveli and Daman and Diu",
+    "dadra & nagar haveli": "Dadra and Nagar Haveli and Daman and Diu",
     "daman and diu": "Dadra and Nagar Haveli and Daman and Diu",
 }
 
