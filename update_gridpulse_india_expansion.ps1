@@ -16,7 +16,10 @@ $Files = @(
     "tests/test_mvp.py",
     "tests/test_central_support.py",
     "tests/test_northeast_support.py",
-    "INSTALL_GRIDPULSE_INDIA.md"
+    "INSTALL_GRIDPULSE_INDIA.md",
+    "readme.md",
+    "README_MVP.md",
+    "README_ROUTE_PLANNER.md"
 )
 
 $ProjectRoot = (Resolve-Path -LiteralPath $ProjectRoot).Path
