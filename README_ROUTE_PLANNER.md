@@ -1,6 +1,6 @@
-# GRIDPULSE Adaptive Route Planner patch
+# Route Planner
 
-This is an additive patch for the current `AnshXGrind/ev-proje` Python/FastAPI codebase. It adds a Route Planner route in the existing dashboard navigation and a standalone `/route-planner` page.
+This module adds a Route Planner page to the existing `AnshXGrind/ev-proje` Python/FastAPI application.
 
 ## Install on Windows
 
@@ -24,15 +24,15 @@ This is an additive patch for the current `AnshXGrind/ev-proje` Python/FastAPI c
 - Origin and destination search (default example: Narnaul, Haryana → Jammu, J&K).
 - OSRM driving route geometry, distance, duration and road labels.
 - Elevation samples from Open-Meteo/Copernicus GLO-90, terrain segmentation and a remote/seasonal risk override.
-- An adaptive spacing formula depending on terrain class, usable vehicle range, reserve, conservative/base/accelerated adoption scenario, and optional traffic/EV-share inputs.
+- A spacing formula based on terrain class, usable vehicle range, reserve, conservative/base/accelerated adoption scenario, and optional traffic/EV-share inputs.
 - Side-aware existing inventory proximity checks and candidate coordinates. The dated BEE inventory is loaded locally; the API does not scrape charging stations.
 - A 20 km general public-charger reference and 100 km long-range/heavy-duty fast-charger reference from EVCI-2024 guidance are reported separately from the more conservative adaptive model. It does not certify regulatory compliance.
 - Optional illustrative future public charging sessions/day and energy/day when users provide traffic, EV share, public-charge share, growth and session-energy assumptions.
 - CSV export for candidates, full JSON export, and a downloadable grid-feasibility utility-data template.
 
-## Important model boundary
+## What this version can and cannot estimate
 
-The route-spacing model is a transparent scenario/heuristic model, **not trained ML**. There is no route-level charger-utilization or hourly charging-session label data with which to train a supervised predictor. Existing DBSCAN remains the unsupervised spatial clustering model in the main dashboard. Do not present scenario results as measured demand forecasts.
+Route spacing is calculated from explicit rules and user-selected assumptions; it is not trained on measured charging sessions. The main dashboard uses DBSCAN to group nearby charger coordinates. Scenario results are estimates from the supplied inputs, not measured demand forecasts.
 
 Route geometry comes from the public OSRM driving router over OpenStreetMap data, place lookup from Nominatim, and elevations from Open-Meteo. These services are best-effort demo services and may time out or change. Requests are cached in process; geocoding is rate-limited. They need internet for new places/routes/elevation.
 
@@ -41,8 +41,8 @@ The model does not establish EV legality on every road, road surface/width, snow
 ## Inputs and formula
 
 - `usable_range = vehicle_real_world_range × (1 − reserve_fraction) × terrain_energy_factor`
-- `adaptive general spacing = min(20 km EVCI-2024 policy reference, policy reference × terrain_factor × scenario_factor × demand_factor × remote-risk factor, usable_range × 0.35)`
-- `adaptive fast-review spacing = min(100 km policy reference, 100 km × terrain_fast_factor × scenario_factor × demand_factor × remote-risk factor, usable_range × 0.75)`
+- `suggested general spacing = min(20 km EVCI-2024 policy reference, policy reference × terrain_factor × scenario_factor × demand_factor × remote-risk factor, usable_range × 0.35)`
+- `suggested fast-review spacing = min(100 km policy reference, 100 km × terrain_fast_factor × scenario_factor × demand_factor × remote-risk factor, usable_range × 0.75)`
 - Terrain class is estimated from elevation and sampled grade proxies; manually override to high-Himalaya or remote/seasonal when known.
 - Demand factor bands are heuristic and labelled in the API output. They must be recalibrated with measured traffic/session data before any real investment decisions.
 
