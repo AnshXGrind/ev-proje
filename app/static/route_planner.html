@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>GRIDPULSE — Adaptive Route Planner</title>
+<title>GRIDPULSE — Route Planner</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
 :root{--bg:#f4f6fa;--panel:#fff;--ink:#111827;--muted:#64748b;--line:#e3e8f1;--navy:#12213b;--blue:#3568e8;--teal:#16866b;--amber:#d78722;--red:#c74d4d;--purple:#765bd1;--shadow:0 8px 28px rgba(20,35,62,.06)}
@@ -12,9 +12,9 @@
 </style>
 </head>
 <body>
-<header class="top"><div class="brand"><div class="logo">G</div><div><h1>GRIDPULSE</h1><p>ADAPTIVE ROUTE INFRASTRUCTURE PLANNER</p></div></div><div class="topright"><span class="pill">BEE SNAPSHOT · 26 OCT 2025</span><a class="back" href="/">← Back to dashboard</a></div></header>
+<header class="top"><div class="brand"><div class="logo">G</div><div><h1>GRIDPULSE</h1><p>ROUTE-BASED EV CHARGING PLANNER</p></div></div><div class="topright"><span class="pill">BEE SNAPSHOT · 26 OCT 2025</span><a class="back" href="/">← Back to dashboard</a></div></header>
 <div class="wrap">
- <div class="head"><div><div class="eyebrow">Route coverage intelligence</div><h2>Adaptive Corridor Planner</h2><p>Model route-by-route charging frequency using terrain, vehicle range, corridor inventory and future scenarios—not one distance for every landscape.</p></div><div class="source">Policy references: 20 km public charger · 100 km fast-charge review</div></div>
+ <div class="head"><div><div class="eyebrow">Route coverage</div><h2>Route Planner</h2><p>Review charger spacing along a selected route using terrain, vehicle range, reported stations and planning assumptions.</p></div><div class="source">Guideline references: 20 km public charging · 100 km fast charging</div></div>
  <div class="layout">
   <aside class="panel">
    <div class="panelhead"><h3>Route & scenario inputs</h3><p>Example route is prefilled; calculate a real road route after submission.</p></div>
@@ -37,7 +37,7 @@
     </div>
     <div class="divider"></div>
     <div style="font-size:11px;font-weight:850;margin-bottom:8px">Optional demand inputs</div>
-    <div class="hint" style="margin-bottom:10px">No traffic feed is connected. Add observed values if you have them; otherwise demand stays uncalculated and the route model uses terrain/range/scenario only.</div>
+    <div class="hint" style="margin-bottom:10px">No traffic data source is connected. Enter observed traffic and EV share if available; without them, demand is left uncalculated.</div>
     <div class="two">
      <div class="group"><label for="traffic">Daily traffic (vehicles/day)</label><input class="field" type="number" id="traffic" min="0" max="2000000" step="100" placeholder="Unknown"></div>
      <div class="group"><label for="evShare">Current EV share (%)</label><input class="field" type="number" id="evShare" min="0" max="100" step="0.1" placeholder="Unknown"></div>
@@ -55,25 +55,25 @@
    </form>
   </aside>
   <main class="maincol">
-   <div id="loading" class="loading">Resolving route, sampling elevation, matching existing inventory and generating adaptive scenarios… The first request may take up to a minute.</div>
+   <div id="loading" class="loading">Resolving route, sampling elevation, matching existing inventory and calculating the selected spacing scenarios… The first request may take up to a minute.</div>
    <div id="errorBox" class="note red hide"></div>
    <section class="metrics">
     <div class="metric"><div class="mlabel">Driving route distance</div><div class="mval" id="mDistance">—</div><div class="mnote" id="mTime">Road routing result</div></div>
     <div class="metric"><div class="mlabel">Reported chargers in corridor</div><div class="mval" id="mStations">—</div><div class="mnote">Approx. coordinate groups, not verified live sites</div></div>
-    <div class="metric"><div class="mlabel">Adaptive spacing range</div><div class="mval" id="mSpacing">—</div><div class="mnote">Model-derived by terrain/range/scenario</div></div>
+    <div class="metric"><div class="mlabel">Suggested spacing range</div><div class="mval" id="mSpacing">—</div><div class="mnote">Calculated from terrain, range and assumptions</div></div>
     <div class="metric"><div class="mlabel">Screening candidates</div><div class="mval" id="mCandidates">—</div><div class="mnote">General coverage + fast-charge review combined</div></div>
    </section>
-   <section class="panel"><div class="panelhead maphead"><div><h3>Route, reported charging locations and candidate zones</h3><p>Click markers for chainage, side, charger evidence and assumptions.</p></div><span class="tag" id="mapStatus">Awaiting route</span></div><div class="map-wrap"><div id="routeMap" class="map"></div></div><div class="legend"><span><i class="dot" style="background:#3268e8"></i>Reported station</span><span><i class="dot" style="background:#d88720"></i>Adaptive site candidate</span><span><i class="dot" style="background:#16866b"></i>Plains</span><span><i class="dot" style="background:#8b63d6"></i>Hills / Himalaya</span><span><i class="dot" style="background:#ca5050"></i>Remote / high-altitude</span></div></section>
-   <section class="panel"><div class="panelhead"><h3>What the route model calculated</h3><p>Policy references remain separate from the adaptive spacing suggested by terrain, usable range and the selected scenario.</p></div><div class="bodypad"><div class="statgrid"><div class="stat"><span>General gap flags</span><strong id="sGapFlags">—</strong></div><div class="stat"><span>20 km policy-reference gap flags</span><strong id="sPolicyFlags">—</strong></div><div class="stat"><span>100 km fast-reference gap flags</span><strong id="sFastFlags">—</strong></div></div><div id="demandBox" class="note blue" style="margin-top:12px">Optional demand estimate will appear here when daily traffic and current EV share are supplied.</div><div id="terrainLegend" class="terrainkey" style="margin-top:12px"></div></div></section>
-   <section class="panel"><div class="panelhead"><h3>Future feasibility scenario comparison</h3><p>Candidate counts and spacing sensitivity for three adoption scenarios; not a statistical forecast.</p></div><div class="bodypad"><div id="scenarioCards" class="scenario"><div class="empty">Run route analysis first.</div></div></div></section>
+   <section class="panel"><div class="panelhead maphead"><div><h3>Route, reported charging locations and candidate zones</h3><p>Click markers for chainage, side, charger evidence and assumptions.</p></div><span class="tag" id="mapStatus">Awaiting route</span></div><div class="map-wrap"><div id="routeMap" class="map"></div></div><div class="legend"><span><i class="dot" style="background:#3268e8"></i>Reported station</span><span><i class="dot" style="background:#d88720"></i>Candidate location</span><span><i class="dot" style="background:#16866b"></i>Plains</span><span><i class="dot" style="background:#8b63d6"></i>Hills / Himalaya</span><span><i class="dot" style="background:#ca5050"></i>Remote / high-altitude</span></div></section>
+   <section class="panel"><div class="panelhead"><h3>Route results</h3><p>Guideline distances are shown separately from the suggested spacing, which uses terrain, usable range and selected assumptions.</p></div><div class="bodypad"><div class="statgrid"><div class="stat"><span>General gap flags</span><strong id="sGapFlags">—</strong></div><div class="stat"><span>20 km policy-reference gap flags</span><strong id="sPolicyFlags">—</strong></div><div class="stat"><span>100 km fast-reference gap flags</span><strong id="sFastFlags">—</strong></div></div><div id="demandBox" class="note blue" style="margin-top:12px">Optional demand estimate will appear here when daily traffic and current EV share are supplied.</div><div id="terrainLegend" class="terrainkey" style="margin-top:12px"></div></div></section>
+   <section class="panel"><div class="panelhead"><h3>Scenario comparison</h3><p>Candidate counts and spacing under three adoption scenarios. These are scenario calculations, not a statistical forecast.</p></div><div class="bodypad"><div id="scenarioCards" class="scenario"><div class="empty">Run route analysis first.</div></div></div></section>
    <div class="grid2">
-    <section class="panel"><div class="panelhead"><h3>Route terrain segments</h3><p>Elevation and grade proxies derived from sampled route points.</p></div><div class="tablewrap"><table class="table"><thead><tr><th>From km</th><th>To km</th><th>Terrain</th><th>Mean elevation</th><th>Grade proxy</th><th>Adaptive gap</th><th>Fast review</th></tr></thead><tbody id="terrainRows"><tr><td colspan="7" class="empty">Run route analysis first.</td></tr></tbody></table></div></section>
-    <section class="panel"><div class="panelhead"><h3>Recommended candidate zones</h3><p>Potential route-side screening coordinates; grid and site access are not verified.</p></div><div class="tablewrap"><table class="table"><thead><tr><th>Route km</th><th>Side</th><th>Terrain</th><th>Target km</th><th>Nearest inventory</th><th>Purpose</th></tr></thead><tbody id="candidateRows"><tr><td colspan="6" class="empty">Run route analysis first.</td></tr></tbody></table></div><div class="bodypad actions"><button class="btn secondary" id="exportCandidates" disabled>Export candidates CSV</button><button class="btn secondary" id="exportJSON" disabled>Export full JSON</button></div></section>
+    <section class="panel"><div class="panelhead"><h3>Route terrain segments</h3><p>Elevation and grade proxies derived from sampled route points.</p></div><div class="tablewrap"><table class="table"><thead><tr><th>From km</th><th>To km</th><th>Terrain</th><th>Mean elevation</th><th>Grade proxy</th><th>Suggested gap</th><th>Fast review</th></tr></thead><tbody id="terrainRows"><tr><td colspan="7" class="empty">Run route analysis first.</td></tr></tbody></table></div></section>
+    <section class="panel"><div class="panelhead"><h3>Candidate locations</h3><p>Potential route-side locations for review. Land access and grid connection are not verified.</p></div><div class="tablewrap"><table class="table"><thead><tr><th>Route km</th><th>Side</th><th>Terrain</th><th>Target km</th><th>Nearest inventory</th><th>Purpose</th></tr></thead><tbody id="candidateRows"><tr><td colspan="6" class="empty">Run route analysis first.</td></tr></tbody></table></div><div class="bodypad actions"><button class="btn secondary" id="exportCandidates" disabled>Export candidates CSV</button><button class="btn secondary" id="exportJSON" disabled>Export full JSON</button></div></section>
    </div>
-   <section class="panel"><div class="panelhead"><h3>Grid readiness data needed next</h3><p>Route analysis cannot determine voltage drop, power cuts or transformer overload without utility data.</p></div><div class="bodypad"><div class="note red">Grid readiness: UNVERIFIED. Do not interpret a candidate as electrically feasible until the local DISCOM confirms connection options and the feeder/transformer is assessed.</div><div class="actions" style="margin-top:11px"><a class="btn secondary" href="/api/route/grid-template.csv" style="text-decoration:none;display:inline-block">Download utility data template</a><a class="btn secondary" href="/api/route/info" target="_blank" style="text-decoration:none;display:inline-block">View model methodology JSON</a></div></div></section>
+   <section class="panel"><div class="panelhead"><h3>Electrical checks</h3><p>Route analysis cannot determine voltage drop, power cuts or transformer overload without utility data.</p></div><div class="bodypad"><div class="note red">Grid readiness: UNVERIFIED. Do not interpret a candidate as electrically feasible until the local DISCOM confirms connection options and the feeder/transformer is assessed.</div><div class="actions" style="margin-top:11px"><a class="btn secondary" href="/api/route/grid-template.csv" style="text-decoration:none;display:inline-block">Download utility data template</a><a class="btn secondary" href="/api/route/info" target="_blank" style="text-decoration:none;display:inline-block">View model methodology JSON</a></div></div></section>
   </main>
  </div>
- <footer class="footer"><span>GRIDPULSE Route Planner · Adaptive research MVP</span><span>Routing: OSRM/OSM · Elevation: Open-Meteo/Copernicus GLO-90 · Chargers: BEE snapshot, 26 Oct 2025 · <a href="https://www.beeindia.gov.in/show_content.php?lang=1&level=2&lid=67&ls_id=345" target="_blank">Official BEE source</a></span></footer>
+ <footer class="footer"><span>GRIDPULSE Route Planner · MVP</span><span>Routing: OSRM/OSM · Elevation: Open-Meteo/Copernicus GLO-90 · Chargers: BEE snapshot, 26 Oct 2025 · <a href="https://www.beeindia.gov.in/show_content.php?lang=1&level=2&lid=67&ls_id=345" target="_blank">Official BEE source</a></span></footer>
 </div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
