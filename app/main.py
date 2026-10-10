@@ -20,7 +20,9 @@ from sklearn.neighbors import BallTree
 ROOT = Path(__file__).resolve().parents[1]
 DATA_PATH = ROOT / "data" / "processed" / "north_india_ev_chargers_map.geojson"
 NE_DATA_PATH = ROOT / "data" / "processed" / "northeast_ev_chargers_map.geojson"
+CENTRAL_DATA_PATH = ROOT / "data" / "processed" / "central_states_ev_chargers_map.geojson"
 NORTHEAST_STATES = ["Assam", "Arunachal Pradesh", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Sikkim", "Tripura"]
+CENTRAL_STATES = ["Bihar", "Uttar Pradesh", "Madhya Pradesh"]
 CSV_PATH = ROOT / "data" / "processed" / "north_india_ev_chargers_exact_dedup_review.csv"
 INDEX_PATH = ROOT / "app" / "static" / "index.html"
 EARTH_RADIUS_KM = 6371.0088
@@ -29,6 +31,7 @@ STATE_ORDER = [
     "Jammu and Kashmir", "Ladakh",
     "Assam", "Arunachal Pradesh", "Manipur", "Meghalaya",
     "Mizoram", "Nagaland", "Sikkim", "Tripura",
+    "Bihar", "Uttar Pradesh", "Madhya Pradesh",
 ]
 # Approximate screening envelopes, deliberately broader than administrative boundaries.
 # Used only to reject obvious state-label/coordinate mismatches; not a legal boundary layer.
@@ -49,6 +52,10 @@ STATE_ENVELOPES = {
     "Nagaland": (25.10, 27.20, 93.30, 95.40),
     "Sikkim": (26.90, 28.20, 88.00, 88.95),
     "Tripura": (22.90, 24.60, 91.10, 92.50),
+    # Broad coordinate envelopes for initial screening, not official boundaries.
+    "Bihar": (24.00, 27.60, 83.20, 88.30),
+    "Uttar Pradesh": (23.70, 30.50, 77.00, 84.70),
+    "Madhya Pradesh": (21.00, 26.95, 74.00, 82.85),
 }
 
 STATE_ALIASES = {
@@ -62,11 +69,11 @@ STATE_ALIASES = {
 }
 
 app = FastAPI(
-    title="North & Northeast India EV Charging Planner",
+    title="North, Central & Northeast India EV Charging Planner",
     version="0.2.0",
     description=(
         "EV charging inventory, spatial clustering and "
-        "initial coverage-gap screening for 15 regions across North and Northeast India."
+        "initial coverage-gap screening for 18 regions across North, Central and Northeast India."
     ),
 )
 app.mount("/static", StaticFiles(directory=str(ROOT / "app" / "static")), name="static")
@@ -112,6 +119,18 @@ def _load_geojson() -> dict:
     else:
         data["northeast_inventory_loaded"] = False
         data["northeast_feature_count"] = 0
+
+    data["central_inventory_loaded"] = False
+    data["central_feature_count"] = 0
+    if CENTRAL_DATA_PATH.exists():
+        with CENTRAL_DATA_PATH.open("r", encoding="utf-8-sig") as f:
+            central = json.load(f)
+        if central.get("type") != "FeatureCollection":
+            raise RuntimeError("Central states inventory must be a GeoJSON FeatureCollection.")
+        features.extend(central.get("features", []))
+        data["central_inventory_loaded"] = True
+        data["central_feature_count"] = len(central.get("features", []))
+
     data["features"] = features
     return data
 
@@ -374,13 +393,17 @@ def health() -> dict:
     try:
         rows = load_records()
         northeast_rows = sum(1 for row in rows if row["state"] in NORTHEAST_STATES)
-        return {"status": "ok", "service": "north-and-northeast-india-ev-planner", "inventory_loaded": True,
+        central_rows = sum(1 for row in rows if row["state"] in CENTRAL_STATES)
+        return {"status": "ok", "service": "north-central-northeast-india-ev-planner", "inventory_loaded": True,
                 "inventory_records": len(rows), "states": len({r['state'] for r in rows}),
                 "northeast_inventory_loaded": NE_DATA_PATH.exists(),
                 "northeast_records": northeast_rows,
+                "central_inventory_loaded": CENTRAL_DATA_PATH.exists(),
+                "central_records": central_rows,
                 "source_snapshot": "2025-10-26",
                 "data_file": str(DATA_PATH.relative_to(ROOT)),
-                "northeast_data_file": str(NE_DATA_PATH.relative_to(ROOT)) if NE_DATA_PATH.exists() else None}
+                "northeast_data_file": str(NE_DATA_PATH.relative_to(ROOT)) if NE_DATA_PATH.exists() else None,
+                "central_data_file": str(CENTRAL_DATA_PATH.relative_to(ROOT)) if CENTRAL_DATA_PATH.exists() else None}
     except Exception as exc:
         return {"status": "error", "inventory_loaded": False, "detail": str(exc)}
 
