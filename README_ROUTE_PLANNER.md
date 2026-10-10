@@ -1,6 +1,6 @@
 # Route Planner
 
-This module adds a Route Planner page for the North and Northeast Indian regions to the existing `AnshXGrind/ev-proje` Python/FastAPI application.
+This module adds a Route Planner page for the North, Central and Northeast Indian regions to the existing `AnshXGrind/ev-proje` Python/FastAPI application.
 
 ## Install on Windows
 
