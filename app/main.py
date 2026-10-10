@@ -51,8 +51,8 @@ app = FastAPI(
     title="North India EV Infrastructure Planner",
     version="0.2.0",
     description=(
-        "Evidence-aware EV charging inventory, spatial clustering and "
-        "first-pass coverage-gap planning for seven North Indian regions."
+        "EV charging inventory, spatial clustering and "
+        "initial coverage-gap screening for seven North Indian regions."
     ),
 )
 app.mount("/static", StaticFiles(directory=str(ROOT / "app" / "static")), name="static")
