@@ -181,8 +181,8 @@ def _normalize_state(value: Any) -> str:
 @lru_cache(maxsize=1)
 def _inventory_groups() -> list[dict[str, Any]]:
     """Load approximate coordinate groups from the dated local inventory."""
-    if not DATA_PATH.exists():
-        raise HTTPException(status_code=503, detail=f"Charging inventory missing at {DATA_PATH}. Copy north_india_ev_chargers_map.geojson into data/processed/.")
+    if not INDIA_DATA_PATH.exists() and not DATA_PATH.exists():
+        raise HTTPException(status_code=503, detail=f"Charging inventory missing at {INDIA_DATA_PATH} or {DATA_PATH}. Prepare the India-wide inventory or copy the legacy North India file.")
     try:
         if INDIA_DATA_PATH.exists():
             with INDIA_DATA_PATH.open("r", encoding="utf-8-sig") as f:
@@ -258,7 +258,7 @@ def _inventory_groups() -> list[dict[str, Any]]:
             "source_snapshot": "2025-10-26",
         })
     if not result:
-        raise HTTPException(status_code=422, detail="No valid North India charger coordinate groups found in the GeoJSON.")
+        raise HTTPException(status_code=422, detail="No valid India charger coordinate groups found in the validated GeoJSON.")
     return result
 
 
@@ -305,6 +305,8 @@ def _geocode_place(query: str) -> dict[str, Any]:
     lat, lon = _num(match.get("lat")), _num(match.get("lon"))
     if lat is None or lon is None:
         raise HTTPException(status_code=502, detail=f"Place lookup returned no coordinates for '{clean}'.")
+    if INDIA_DATA_PATH.exists() and not point_inside_india(lat, lon, INDIA_BOUNDARY_PATH):
+        raise HTTPException(status_code=422, detail=f"Place lookup for '{clean}' resolved outside the validated India boundary.")
     value = {"query": clean, "label": str(match.get("display_name") or clean), "lat": lat, "lon": lon, "method": "Nominatim place search"}
     _geocode_cache[key] = value
     return value
