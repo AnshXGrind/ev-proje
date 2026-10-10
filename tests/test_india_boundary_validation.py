@@ -57,3 +57,14 @@ def test_state_name_aliases_cover_common_inventory_variants():
     assert normalize_state_name("Pondicherry") == "Puducherry"
     assert normalize_state_name("UT OF D&NH AND D&D") == "Dadra and Nagar Haveli and Daman and Diu"
     assert normalize_state_name("Jammu & Kashmir") == "Jammu and Kashmir"
+
+
+def test_official_boundary_spelling_variants_normalize_to_canonical_names():
+    assert normalize_state_name("Andaman & Nicobar Island") == "Andaman and Nicobar Islands"
+    assert normalize_state_name("Arunāchal Pradesh") == "Arunachal Pradesh"
+    assert normalize_state_name("Dādra and Nagar Haveli and Damān and Diu") == (
+        "Dadra and Nagar Haveli and Daman and Diu"
+    )
+    assert normalize_state_name("Dadra and Nagar Haveli, Daman and Diu") == (
+        "Dadra and Nagar Haveli and Daman and Diu"
+    )
