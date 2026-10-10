@@ -1,6 +1,6 @@
-# GRIDPULSE — North India EV Planner (MVP)
+# North India EV Planner (MVP)
 
-This overlay adds a local FastAPI backend and a live dashboard to the existing `ev-proje` scaffold. It uses the filtered BEE public charging-station inventory already extracted from the PDF. No Open Charge Map API key is needed.
+This adds a local FastAPI backend and an interactive dashboard to the existing `ev-proje` project. It uses the filtered BEE public charging-station inventory already extracted from the PDF. No Open Charge Map API key is needed.
 
 ## Run on Windows
 
@@ -21,10 +21,10 @@ The startup script installs four runtime dependencies into the project `.venv`: 
 - FastAPI health, inventory, regional analytics, station search and filtered inventory endpoints.
 - Interactive frontend: region selector, clustered station map, charger mix, power-band summaries, searchable table, and CSV export.
 - Unsupervised spatial DBSCAN clustering (Haversine distance) on approximate coordinate groups.
-- Budget-parameterized, spatially diversified midpoint coverage-gap screening and CSV export.
+- Budget-based midpoint screening for possible coverage gaps, with CSV export.
 - Local map/API use, no external charger-data API key required. Map tiles and Leaflet assets still require internet access.
 
-## Important claims boundary
+## Data limits
 
 - Inventory source snapshot: 26 October 2025; operating status is not live verified.
 - Approximate coordinate groups are not a verified count of physical stations.
