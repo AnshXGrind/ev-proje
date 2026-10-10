@@ -32,6 +32,7 @@ from shapely.ops import transform as shapely_transform
 router = APIRouter(tags=["route-planner"])
 ROOT = Path(__file__).resolve().parents[1]
 DATA_PATH = ROOT / "data" / "processed" / "north_india_ev_chargers_map.geojson"
+NE_DATA_PATH = ROOT / "data" / "processed" / "northeast_ev_chargers_map.geojson"
 ROUTE_HTML = ROOT / "app" / "static" / "route_planner.html"
 EARTH_RADIUS_KM = 6371.0088
 APP_UA = "GRIDPULSE-EVPlanner/0.4 (research prototype; github.com/AnshXGrind/ev-proje)"
@@ -42,11 +43,14 @@ ELEVATION_URL = "https://api.open-meteo.com/v1/elevation"
 STATE_ORDER = [
     "Delhi", "Haryana", "Punjab", "Himachal Pradesh", "Uttarakhand",
     "Jammu and Kashmir", "Ladakh",
+    "Assam", "Arunachal Pradesh", "Manipur", "Meghalaya",
+    "Mizoram", "Nagaland", "Sikkim", "Tripura",
 ]
 STATE_ALIASES = {
     "Jammu & Kashmir": "Jammu and Kashmir", "Jammu and kashmir": "Jammu and Kashmir",
     "Jammu Kashmir": "Jammu and Kashmir", "J&K": "Jammu and Kashmir",
     "Uttrakhand": "Uttarakhand", "Uttaranchal": "Uttarakhand",
+    "Arunachal": "Arunachal Pradesh",
 }
 # Broad envelopes flag obviously mismatched inventory coordinates. They are not authoritative boundaries.
 STATE_ENVELOPES = {
@@ -57,6 +61,15 @@ STATE_ENVELOPES = {
     "Uttarakhand": (28.50, 31.60, 77.40, 81.20),
     "Jammu and Kashmir": (32.00, 35.95, 73.35, 79.35),
     "Ladakh": (32.00, 36.25, 75.00, 80.60),
+    # Broad coordinate envelopes for screening only, not official state boundaries.
+    "Assam": (24.00, 28.30, 89.50, 96.20),
+    "Arunachal Pradesh": (26.50, 29.80, 91.40, 97.50),
+    "Manipur": (23.80, 25.80, 93.00, 94.90),
+    "Meghalaya": (25.00, 26.30, 89.50, 92.80),
+    "Mizoram": (21.80, 24.60, 91.80, 93.50),
+    "Nagaland": (25.10, 27.20, 93.30, 95.40),
+    "Sikkim": (26.90, 28.20, 88.00, 88.95),
+    "Tripura": (22.90, 24.60, 91.10, 92.50),
 }
 
 # Transparent screening parameters, deliberately configurable in one place.
@@ -156,13 +169,20 @@ def _inventory_groups() -> list[dict[str, Any]]:
     try:
         with DATA_PATH.open("r", encoding="utf-8-sig") as f:
             data = json.load(f)
+        if data.get("type") != "FeatureCollection":
+            raise HTTPException(status_code=500, detail="Base station file is not a GeoJSON FeatureCollection.")
+        features = list(data.get("features", []))
+        if NE_DATA_PATH.exists():
+            with NE_DATA_PATH.open("r", encoding="utf-8-sig") as f:
+                northeast = json.load(f)
+            if northeast.get("type") != "FeatureCollection":
+                raise HTTPException(status_code=500, detail="Northeast station file is not a GeoJSON FeatureCollection.")
+            features.extend(northeast.get("features", []))
     except (OSError, json.JSONDecodeError) as exc:
         raise HTTPException(status_code=500, detail=f"Could not read station GeoJSON: {exc}") from exc
-    if data.get("type") != "FeatureCollection":
-        raise HTTPException(status_code=500, detail="Station file is not a GeoJSON FeatureCollection.")
 
     groups: dict[tuple[float, float], list[dict[str, Any]]] = defaultdict(list)
-    for feature in data.get("features", []):
+    for feature in features:
         props = feature.get("properties") or {}
         geom = feature.get("geometry") or {}
         coords = geom.get("coordinates") or []
