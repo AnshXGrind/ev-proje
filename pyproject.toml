@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ev-infrastructure-planner"
+version = "0.1.0"
+description = "Landscape-aware EV charging infrastructure planning."
+requires-python = ">=3.10"
+dependencies = [
+    "numpy",
+    "pandas",
+    "geopandas>=1.0,<2",
+    "shapely>=2.0,<3",
+    "pyogrio",
+    "osmnx>=2.0,<3",
+    "PyYAML",
+    "folium",
+    "requests"
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "ruff"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

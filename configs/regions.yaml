@@ -1,0 +1,20 @@
+default_region: himachal_manali
+
+regions:
+  himachal_manali:
+    display_name: "Manali town - mountain tourism"
+    place: "Manali, Himachal Pradesh, India"
+    profile: "mountain_tourism"
+    center: [32.2396, 77.1887]
+
+  haryana_manesar:
+    display_name: "Manesar - plains and highway"
+    place: "Manesar, Haryana, India"
+    profile: "plains_highway_industry"
+    center: [28.3510, 76.9420]
+
+  south_mysuru:
+    display_name: "Mysuru - southern urban and plateau"
+    place: "Mysuru, Karnataka, India"
+    profile: "southern_urban_plateau"
+    center: [12.2958, 76.6394]
