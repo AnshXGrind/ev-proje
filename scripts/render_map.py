@@ -1,4 +1,4 @@
-import argparse
+﻿import argparse
 import sys
 import json
 from pathlib import Path
@@ -45,8 +45,17 @@ def main():
         location=center,
         zoom_start=11,
         control_scale=True,
-        tiles="OpenStreetMap"
+        tiles=None
     )
+
+    folium.TileLayer(
+        tiles="https://services.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
+        attr="Tiles &copy; Esri; Sources: Esri, TomTom, Garmin, FAO, NOAA, USGS, and the GIS User Community",
+        name="Esri World Street Map",
+        overlay=False,
+        control=True,
+        max_zoom=19
+    ).add_to(fmap)
 
     if roads_path.exists():
         folium.GeoJson(
@@ -96,7 +105,7 @@ def main():
                 color="#bc6715",
                 fill=True,
                 fill_opacity=0.65,
-                popup=label + " — site and grid feasibility unverified"
+                popup=label + " â€” site and grid feasibility unverified"
             ).add_to(layer)
 
         layer.add_to(fmap)
@@ -113,3 +122,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
