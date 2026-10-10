@@ -194,14 +194,25 @@ def load_records() -> list[dict]:
         state = normalize_state(props.get("state"))
         if state not in STATE_ORDER:
             continue
-        if data.get("india_inventory_loaded") and props.get("boundary_status") != "inside_india":
-            continue
+        if data.get("india_inventory_loaded"):
+            if props.get("boundary_status") != "inside_india":
+                continue
+            # Recheck the shipped validated file when loading it into the API.
+            # This prevents a stale/edited GeoJSON from bypassing the polygon gate.
+            if not point_inside_india(lat, lon, INDIA_BOUNDARY_PATH):
+                continue
+            if not point_inside_state(state, lat, lon, INDIA_BOUNDARY_PATH):
+                continue
         power = _num(props.get("charger_rating_kw"))
         connector_kw = _num(props.get("connector_rating_kw"))
         connectors = _num(props.get("number_of_connectors"))
         record = {
             "id": f"pcs-{idx+1}",
+            "source_record_id": str(props.get("record_id") or f"pcs-{idx+1}"),
             "state": state,
+            "source_state_raw": str(props.get("source_state_raw") or state),
+            "boundary_status": str(props.get("boundary_status") or "not_authoritatively_checked"),
+            "boundary_state_status": str(props.get("boundary_state_status") or "legacy_envelope_only"),
             "district": str(props.get("district") or "Not recorded"),
             "city_village": str(props.get("city_village") or "Not recorded"),
             "location": str(props.get("location") or "Location not recorded"),
@@ -212,7 +223,7 @@ def load_records() -> list[dict]:
             "connector_rating_kw": connector_kw,
             "number_of_connectors": connectors,
             "duplicate_occurrences": int(_num(props.get("duplicate_occurrences")) or 1),
-            "source_pages": str(props.get("source_pages") or "Not recorded"),
+            "source_pages": str(props.get("source_pages") or props.get("source_page") or "Not recorded"),
             "lat": lat,
             "lon": lon,
             "source_snapshot": "2025-10-26",
@@ -557,7 +568,12 @@ def quality(state: str = "All North India") -> dict:
         "approx_coordinate_groups": len(groups),
         "missing_power_rating_records": missing_power,
         "missing_operator_records": missing_operator,
-        "records_outside_approximate_region_envelope": out_of_envelope,
+        "records_outside_approximate_region_envelope": out_of_envelope if not INDIA_DATA_PATH.exists() else None,
+        "records_outside_authoritative_state_boundary": sum(
+            1 for row in rows
+            if INDIA_DATA_PATH.exists()
+            and not point_inside_state(row["state"], row["lat"], row["lon"], INDIA_BOUNDARY_PATH)
+        ) if INDIA_DATA_PATH.exists() else None,
         "boundary_validation_applied": bool(INDIA_DATA_PATH.exists()),
         "source_snapshot": "2025-10-26",
         "note": "Broad bounding envelopes only identify potential state/coordinate mismatches; they do not replace an authoritative state-boundary dataset."
