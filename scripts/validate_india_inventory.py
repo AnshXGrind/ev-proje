@@ -83,7 +83,7 @@ CANONICAL_STATES = {
 
 
 def normalize_state_name(value: Any) -> str:
-    raw = re.sub(r"\\s+", " ", str(value or "").strip())
+    raw = re.sub(r"\s+", " ", str(value or "").strip())
     key = raw.casefold()
     if key in STATE_NAME_ALIASES:
         return STATE_NAME_ALIASES[key]
