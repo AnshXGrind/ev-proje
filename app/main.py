@@ -81,11 +81,11 @@ STATE_ALIASES = {
 }
 
 app = FastAPI(
-    title="North, Central & Northeast India EV Charging Planner",
+    title="GRIDPULSE India-wide EV Charging Planner",
     version="0.2.0",
     description=(
         "EV charging inventory, spatial clustering and "
-        "initial coverage-gap screening for 18 regions across North, Central and Northeast India."
+        "boundary-validated inventory and preliminary coverage-gap screening across India."
     ),
 )
 app.mount("/static", StaticFiles(directory=str(ROOT / "app" / "static")), name="static")
@@ -214,7 +214,7 @@ def load_records() -> list[dict]:
         }
         rows.append(record)
     if not rows:
-        raise RuntimeError("No valid North India point records were found in the GeoJSON.")
+        raise RuntimeError("No valid India point records were found in the GeoJSON.")
     return rows
 
 
@@ -436,21 +436,27 @@ def index() -> HTMLResponse:
 def health() -> dict:
     try:
         rows = load_records()
+        data = _load_geojson()
+        national_loaded = bool(data.get("india_inventory_loaded"))
         northeast_rows = sum(1 for row in rows if row["state"] in NORTHEAST_STATES)
         central_rows = sum(1 for row in rows if row["state"] in CENTRAL_STATES)
+        validation = data.get("boundary_validation") or {}
         return {"status": "ok", "service": "gridpulse-india-ev-planner", "inventory_loaded": True,
                 "inventory_records": len(rows), "states": len({r['state'] for r in rows}),
-                "northeast_inventory_loaded": NE_DATA_PATH.exists(),
+                "northeast_inventory_loaded": national_loaded or NE_DATA_PATH.exists(),
                 "northeast_records": northeast_rows,
-                "central_inventory_loaded": CENTRAL_DATA_PATH.exists(),
+                "central_inventory_loaded": national_loaded or CENTRAL_DATA_PATH.exists(),
                 "central_records": central_rows,
-                "india_inventory_loaded": bool(_load_geojson().get("india_inventory_loaded")),
-                "india_source_candidate_records": int(_load_geojson().get("india_source_candidate_records") or 0),
-                "india_excluded_records": int(_load_geojson().get("india_excluded_records") or 0),
-                "boundary_validation_passed": bool((_load_geojson().get("boundary_validation") or {}).get("status") == "passed"),
+                "india_inventory_loaded": national_loaded,
+                "india_source_candidate_records": int(data.get("india_source_candidate_records") or 0),
+                "india_excluded_records": int(data.get("india_excluded_records") or 0),
+                "boundary_validation_passed": validation.get("status") == "passed",
+                "boundary_validated_records": int(validation.get("included_records") or len(rows)) if national_loaded else 0,
+                "state_label_corrections": int(validation.get("corrected_state_labels") or 0) if national_loaded else 0,
                 "states_and_uts_target": 36,
                 "source_snapshot": "2025-10-26",
-                "data_file": str(DATA_PATH.relative_to(ROOT)),
+                "data_file": str((INDIA_DATA_PATH if national_loaded else DATA_PATH).relative_to(ROOT)),
+                "boundary_file": str(INDIA_BOUNDARY_PATH.relative_to(ROOT)) if national_loaded else None,
                 "northeast_data_file": str(NE_DATA_PATH.relative_to(ROOT)) if NE_DATA_PATH.exists() else None,
                 "central_data_file": str(CENTRAL_DATA_PATH.relative_to(ROOT)) if CENTRAL_DATA_PATH.exists() else None}
     except Exception as exc:
@@ -465,7 +471,7 @@ def overview(state: str | None = None) -> dict:
     reported_connectors = sum((r["number_of_connectors"] or 0) for r in rows)
     fast_records = sum(1 for r in rows if (r["charger_rating_kw"] or 0) >= 50)
     return {
-        "selected_region": normalize_state(state) if state and state not in {"All North India", "All India", "All covered regions"} else "All North & Northeast India",
+        "selected_region": normalize_state(state) if state and state not in {"All North India", "All India", "All covered regions"} else "All India",
         "inventory_records": len(rows),
         "approx_coordinate_groups": len(coordinate_groups),
         "reported_connector_total": round(reported_connectors, 2),
@@ -545,6 +551,7 @@ def quality(state: str = "All North India") -> dict:
         "missing_power_rating_records": missing_power,
         "missing_operator_records": missing_operator,
         "records_outside_approximate_region_envelope": out_of_envelope,
+        "boundary_validation_applied": bool(INDIA_DATA_PATH.exists()),
         "source_snapshot": "2025-10-26",
         "note": "Broad bounding envelopes only identify potential state/coordinate mismatches; they do not replace an authoritative state-boundary dataset."
     }
