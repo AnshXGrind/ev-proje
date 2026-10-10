@@ -809,6 +809,20 @@ def analyze_route(request: RouteAnalyzeRequest) -> dict[str, Any]:
     destination = _geocode_place(request.destination)
     route = _get_route(origin, destination)
     coords = route["coordinates"]
+    if INDIA_DATA_PATH.exists():
+        outside_route_vertices = [
+            index for index, coordinate in enumerate(coords)
+            if len(coordinate) < 2
+            or not point_inside_india(float(coordinate[1]), float(coordinate[0]), INDIA_BOUNDARY_PATH)
+        ]
+        if outside_route_vertices:
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    "The routed path contains geometry vertices outside the validated India boundary. "
+                    "Select a route entirely within India; the planner will not screen cross-border segments."
+                ),
+            )
     projected_line, forward, reverse = _projected_line(coords, origin, destination)
     route_distance = float(route["distance_km"])
     if route_distance <= 0:
