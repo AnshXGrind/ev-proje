@@ -68,3 +68,8 @@ def test_official_boundary_spelling_variants_normalize_to_canonical_names():
     assert normalize_state_name("Dadra and Nagar Haveli, Daman and Diu") == (
         "Dadra and Nagar Haveli and Daman and Diu"
     )
+    # Exact state_name spellings published in the current NWIC GeoJSON.
+    assert normalize_state_name("Arunanchal Pradesh") == "Arunachal Pradesh"
+    assert normalize_state_name("Dadra & Nagar Havelli and Daman & Diu") == (
+        "Dadra and Nagar Haveli and Daman and Diu"
+    )
