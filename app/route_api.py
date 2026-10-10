@@ -643,7 +643,7 @@ def _plan_spacing(route_line: LineString, route_distance_km: float, line_length_
                 "additional_sites_policy_reference": policy_additional,
                 "boundary_note": "Route endpoints are boundaries, not proof that a charger exists at the origin/destination.",
             })
-            # Evenly split each observed gap; resulting spacing is <= adaptive target.
+            # Evenly split each observed gap; spacing does not exceed the selected target.
             for j in range(1, model_additional + 1):
                 ch = left + (right - left) * j / (model_additional + 1)
                 add_candidate(ch, side, "adaptive general coverage", left, right, right - left, target)
@@ -726,7 +726,7 @@ def route_grid_template() -> StreamingResponse:
 
 @router.post("/api/route/analyze")
 def analyze_route(request: RouteAnalyzeRequest) -> dict[str, Any]:
-    """Calculate route geometry, terrain segments, adaptive spacing, and side-aware inventory gaps."""
+    """Calculate route geometry, terrain segments, suggested spacing, and nearby inventory gaps."""
     if request.origin.strip().casefold() == request.destination.strip().casefold():
         raise HTTPException(status_code=422, detail="Origin and destination must be different places.")
     remote_keywords = ("lahaul", "spiti", "kaza", "keylong", "leh", "zanskar", "baralacha", "kunzum", "rohtang")
