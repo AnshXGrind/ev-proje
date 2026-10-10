@@ -702,8 +702,8 @@ def route_planner_page() -> HTMLResponse:
 @router.get("/api/route/info")
 def route_model_info() -> dict[str, Any]:
     return {
-        "model": "Terrain-aware adaptive corridor screening",
-        "learning_status": "transparent rule-based scenario model; not supervised ML because route-level charger-use labels and time-series charging sessions are not available",
+        "model": "Route coverage screening based on terrain and vehicle range",
+        "learning_status": "spacing is calculated using explicit rules and user-selected assumptions; measured route-level charger use and hourly charging sessions are not available",
         "terrain_data": "Open-Meteo elevation API (Copernicus GLO-90); if unavailable, the UI marks terrain as unverified/conservative fallback",
         "routing": "OSRM public driving router based on OpenStreetMap",
         "inventory_snapshot": "BEE public charging station inventory, 26 Oct 2025",
@@ -842,7 +842,7 @@ def analyze_route(request: RouteAnalyzeRequest) -> dict[str, Any]:
             "usable_range": "vehicle_range × (1 − reserve_fraction) × terrain_energy_factor",
             "fast_review_spacing": "min(100 km policy reference, 100 km × terrain_fast_factor × adoption_scenario_factor × demand_factor × remote_risk_factor, usable_range × 0.75)",
             "demand_factor_bands": "If sessions estimated: >=100/day => 0.72; >=40 => 0.80; >=15 => 0.88; >=5 => 0.95; otherwise 1.00. Screening bands only; calibrate with measured sessions.",
-            "learning_boundary": "This is a transparent rule-based model, not ML trained on station utilization or route-level charging outcomes. Existing DBSCAN still provides unsupervised spatial clustering separately.",
+            "learning_boundary": "Route spacing uses explicit rules and user-selected assumptions; it has not been fitted to measured charging outcomes. DBSCAN is used separately to group nearby station coordinates.",
         },
         "evidence": {
             "inventory": "BEE public charging-station snapshot dated 26 Oct 2025; current operational status is not live-verified.",
