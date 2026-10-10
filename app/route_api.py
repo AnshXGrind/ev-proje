@@ -26,14 +26,17 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import HTMLResponse, StreamingResponse
 from pydantic import BaseModel, Field, model_validator
 from pyproj import CRS, Transformer
-from shapely.geometry import LineString, Point
-from shapely.ops import transform as shapely_transform
+from shapely.geometry import LineString, Point, shape
+from shapely.ops import transform as shapely_transform, unary_union
+from shapely.validation import make_valid
 
 router = APIRouter(tags=["route-planner"])
 ROOT = Path(__file__).resolve().parents[1]
 DATA_PATH = ROOT / "data" / "processed" / "north_india_ev_chargers_map.geojson"
 NE_DATA_PATH = ROOT / "data" / "processed" / "northeast_ev_chargers_map.geojson"
 CENTRAL_DATA_PATH = ROOT / "data" / "processed" / "central_states_ev_chargers_map.geojson"
+INDIA_DATA_PATH = ROOT / "data" / "processed" / "india_ev_chargers_map.geojson"
+BOUNDARY_PATH = ROOT / "data" / "boundaries" / "india_states_boundary.geojson"
 ROUTE_HTML = ROOT / "app" / "static" / "route_planner.html"
 EARTH_RADIUS_KM = 6371.0088
 APP_UA = "GRIDPULSE-EVPlanner/0.4 (research prototype; github.com/AnshXGrind/ev-proje)"
@@ -42,17 +45,25 @@ OSRM_URL = "https://router.project-osrm.org/route/v1/driving"
 ELEVATION_URL = "https://api.open-meteo.com/v1/elevation"
 
 STATE_ORDER = [
-    "Delhi", "Haryana", "Punjab", "Himachal Pradesh", "Uttarakhand",
-    "Jammu and Kashmir", "Ladakh",
-    "Assam", "Arunachal Pradesh", "Manipur", "Meghalaya",
-    "Mizoram", "Nagaland", "Sikkim", "Tripura",
-    "Bihar", "Uttar Pradesh", "Madhya Pradesh",
+    "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
+    "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka",
+    "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram",
+    "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu",
+    "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal",
+    "Andaman and Nicobar Islands", "Chandigarh",
+    "Dadra and Nagar Haveli and Daman and Diu", "Delhi", "Jammu and Kashmir",
+    "Ladakh", "Lakshadweep", "Puducherry",
 ]
 STATE_ALIASES = {
     "Jammu & Kashmir": "Jammu and Kashmir", "Jammu and kashmir": "Jammu and Kashmir",
     "Jammu Kashmir": "Jammu and Kashmir", "J&K": "Jammu and Kashmir",
     "Uttrakhand": "Uttarakhand", "Uttaranchal": "Uttarakhand",
-    "Arunachal": "Arunachal Pradesh",
+    "Arunachal": "Arunachal Pradesh", "Orissa": "Odisha",
+    "Pondicherry": "Puducherry", "Andaman & Nicobar": "Andaman and Nicobar Islands",
+    "Andaman and Nicobar": "Andaman and Nicobar Islands",
+    "Dadra & Nagar Haveli and Daman & Diu": "Dadra and Nagar Haveli and Daman and Diu",
+    "Dadra and Nagar Haveli": "Dadra and Nagar Haveli and Daman and Diu",
+    "Daman and Diu": "Dadra and Nagar Haveli and Daman and Diu",
 }
 # Broad envelopes flag obviously mismatched inventory coordinates. They are not authoritative boundaries.
 STATE_ENVELOPES = {
@@ -164,27 +175,74 @@ def _num(value: Any) -> float | None:
 
 def _normalize_state(value: Any) -> str:
     raw = str(value or "").strip()
-    return STATE_ALIASES.get(raw, raw)
+    aliases = {key.casefold(): val for key, val in STATE_ALIASES.items()}
+    return aliases.get(raw.casefold(), raw)
+
+@lru_cache(maxsize=1)
+def _state_boundary_geometries() -> dict[str, Any]:
+    if not BOUNDARY_PATH.exists():
+        if INDIA_DATA_PATH.exists():
+            raise HTTPException(status_code=503, detail="India-wide map exists but state/UT boundary file is missing. Run scripts/validate_india_inventory.py.")
+        return {}
+    try:
+        payload = json.loads(BOUNDARY_PATH.read_text(encoding="utf-8-sig"))
+        if payload.get("type") != "FeatureCollection":
+            raise ValueError("Boundary file is not a GeoJSON FeatureCollection.")
+        geometries: dict[str, Any] = {}
+        for feature in payload.get("features", []):
+            props = feature.get("properties") or {}
+            raw_name = next((props.get(k) for k in ("STNAME", "stname", "STATE", "state", "STATE_NAME", "state_name", "name", "shapeName", "NAME_1", "NAME") if props.get(k)), "")
+            name = _normalize_state(raw_name)
+            if not name or not feature.get("geometry"):
+                continue
+            polygon = shape(feature["geometry"])
+            if not polygon.is_valid:
+                polygon = make_valid(polygon)
+            geometries[name] = unary_union([geometries[name], polygon]) if name in geometries else polygon
+        if INDIA_DATA_PATH.exists() and len(geometries) < 30:
+            raise ValueError(f"Only {len(geometries)} state/UT boundaries loaded; refusing nationwide mode.")
+        return geometries
+    except (OSError, ValueError, TypeError) as exc:
+        if INDIA_DATA_PATH.exists():
+            raise HTTPException(status_code=503, detail=f"India boundary data invalid: {exc}") from exc
+        return {}
+
+@lru_cache(maxsize=1)
+def _india_boundary_geometry() -> Any:
+    boundaries = _state_boundary_geometries()
+    if not boundaries:
+        return None
+    return unary_union(list(boundaries.values()))
+
+def _point_inside_india(lat: float, lon: float) -> bool:
+    boundary = _india_boundary_geometry()
+    if boundary is None:
+        return not INDIA_DATA_PATH.exists()
+    return bool(boundary.covers(Point(float(lon), float(lat))))
 
 
 @lru_cache(maxsize=1)
 def _inventory_groups() -> list[dict[str, Any]]:
     """Load approximate coordinate groups from the dated local inventory."""
-    if not DATA_PATH.exists():
-        raise HTTPException(status_code=503, detail=f"Charging inventory missing at {DATA_PATH}. Copy north_india_ev_chargers_map.geojson into data/processed/.")
+    source_path = INDIA_DATA_PATH if INDIA_DATA_PATH.exists() else DATA_PATH
+    if not source_path.exists():
+        raise HTTPException(status_code=503, detail=f"Charging inventory missing at {source_path}. Copy the validated India map into data/processed/ or use the legacy regional files.")
     try:
-        with DATA_PATH.open("r", encoding="utf-8-sig") as f:
+        with source_path.open("r", encoding="utf-8-sig") as f:
             data = json.load(f)
         if data.get("type") != "FeatureCollection":
-            raise HTTPException(status_code=500, detail="Base station file is not a GeoJSON FeatureCollection.")
+            raise HTTPException(status_code=500, detail="Station file is not a GeoJSON FeatureCollection.")
         features = list(data.get("features", []))
-        if NE_DATA_PATH.exists():
+        nationwide = source_path == INDIA_DATA_PATH
+        boundaries = _state_boundary_geometries() if nationwide else {}
+        india_polygon = unary_union(list(boundaries.values())) if boundaries else None
+        if not nationwide and NE_DATA_PATH.exists():
             with NE_DATA_PATH.open("r", encoding="utf-8-sig") as f:
                 northeast = json.load(f)
             if northeast.get("type") != "FeatureCollection":
                 raise HTTPException(status_code=500, detail="Northeast station file is not a GeoJSON FeatureCollection.")
             features.extend(northeast.get("features", []))
-        if CENTRAL_DATA_PATH.exists():
+        if not nationwide and CENTRAL_DATA_PATH.exists():
             with CENTRAL_DATA_PATH.open("r", encoding="utf-8-sig") as f:
                 central = json.load(f)
             if central.get("type") != "FeatureCollection":
@@ -204,10 +262,16 @@ def _inventory_groups() -> list[dict[str, Any]]:
         state = _normalize_state(props.get("state"))
         if lon is None or lat is None or state not in STATE_ORDER or not (-180 <= lon <= 180 and -90 <= lat <= 90):
             continue
-        envelope = STATE_ENVELOPES.get(state)
-        if envelope and not (envelope[0] <= lat <= envelope[1] and envelope[2] <= lon <= envelope[3]):
-            # Keep raw source elsewhere, but do not use obvious coordinate/state mismatches for route coverage.
-            continue
+        if INDIA_DATA_PATH.exists():
+            state_polygon = _state_boundary_geometries().get(state)
+            india_polygon = _india_boundary_geometry()
+            if state_polygon is None or india_polygon is None or not state_polygon.covers(Point(lon, lat)) or not india_polygon.covers(Point(lon, lat)):
+                continue
+        else:
+            envelope = STATE_ENVELOPES.get(state)
+            if envelope and not (envelope[0] <= lat <= envelope[1] and envelope[2] <= lon <= envelope[3]):
+                # Legacy regional source uses only broad screening envelopes.
+                continue
         groups[(round(lat, 4), round(lon, 4))].append(props)
 
     result: list[dict[str, Any]] = []
@@ -246,6 +310,8 @@ def _geocode_place(query: str) -> dict[str, Any]:
         lat, lon = float(m.group(1)), float(m.group(2))
         if not (-90 <= lat <= 90 and -180 <= lon <= 180):
             raise HTTPException(status_code=422, detail=f"Coordinates out of range for '{clean}'.")
+        if not _point_inside_india(lat, lon):
+            raise HTTPException(status_code=422, detail=f"Coordinates {clean} fall outside the India state/UT boundary layer.")
         return {"query": clean, "label": f"Manual coordinates {lat:.5f}, {lon:.5f}", "lat": lat, "lon": lon, "method": "user-supplied coordinates"}
 
     key = clean.casefold()
@@ -276,6 +342,8 @@ def _geocode_place(query: str) -> dict[str, Any]:
     lat, lon = _num(match.get("lat")), _num(match.get("lon"))
     if lat is None or lon is None:
         raise HTTPException(status_code=502, detail=f"Place lookup returned no coordinates for '{clean}'.")
+    if not _point_inside_india(lat, lon):
+        raise HTTPException(status_code=422, detail=f"Geocoded result for '{clean}' is outside the India state/UT boundary layer. Add an Indian state/district or try another place spelling.")
     value = {"query": clean, "label": str(match.get("display_name") or clean), "lat": lat, "lon": lon, "method": "Nominatim place search"}
     _geocode_cache[key] = value
     return value
@@ -627,6 +695,8 @@ def _plan_spacing(route_line: LineString, route_distance_km: float, line_length_
 
     def add_candidate(chainage: float, side: str, category: str, gap_start: float, gap_end: float, gap_length: float, target: float) -> None:
         lat, lon = _candidate_offset_point(route_line, chainage, route_distance_km, line_length_m, reverse, side)
+        if not _point_inside_india(lat, lon):
+            return
         terrain = _terrain_at(chainage, segments)
         existing = next((c for c in candidates if c["route_side"] == side and abs(c["route_km"] - chainage) <= max(1.0, min(3.0, target / 8.0))), None)
         gap_record = {"start_km": round(gap_start, 2), "end_km": round(gap_end, 2), "gap_km": round(gap_length, 2), "target_spacing_km": round(target, 2)}
