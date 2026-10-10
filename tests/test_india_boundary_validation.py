@@ -2,7 +2,11 @@ from __future__ import annotations
 
 import json
 
-from shapely.geometry import mapping, box
+from pyproj import Transformer
+from shapely.geometry import Point, mapping, box, shape
+from shapely.ops import transform as transform_geometry
+
+from scripts.prepare_india_inventory import _convert_boundary_data_to_wgs84
 
 from app.geo_boundaries import (
     STATE_NAMES,
@@ -50,6 +54,32 @@ def test_point_in_india_and_state_polygon(tmp_path):
     assert not point_inside_india(20, 20, path)
     assert not point_inside_state("Andhra Pradesh", 2, 2, path)
     assert matching_states(2, 2, path) == ["Andaman and Nicobar Islands"]
+
+
+def test_projected_nwic_boundary_is_reprojected_to_wgs84():
+    # Simulate an official boundary polygon in EPSG:7755 (metres).
+    to_projected = Transformer.from_crs("EPSG:4326", "EPSG:7755", always_xy=True)
+    projected_polygon = transform_geometry(to_projected.transform, box(79.0, 13.0, 80.0, 14.0))
+    data = {
+        "type": "FeatureCollection",
+        "metadata": {},
+        "features": [{
+            "type": "Feature",
+            "geometry": mapping(projected_polygon),
+            "properties": {"state_name": "Andhra Pradesh"},
+        }],
+    }
+
+    converted = _convert_boundary_data_to_wgs84(data)
+    output_polygon = shape(converted["features"][0]["geometry"])
+
+    assert output_polygon.bounds[0] >= -180
+    assert output_polygon.bounds[2] <= 180
+    assert output_polygon.bounds[1] >= -90
+    assert output_polygon.bounds[3] <= 90
+    assert output_polygon.covers(Point(79.5, 13.5))
+    assert converted["metadata"]["source_coordinate_reference_system"].startswith("EPSG:7755")
+    assert converted["metadata"]["coordinate_reference_system"].startswith("EPSG:4326")
 
 
 def test_state_name_aliases_cover_common_inventory_variants():
