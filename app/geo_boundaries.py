@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+import unicodedata
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
@@ -21,11 +22,24 @@ STATE_NAMES = [
     "Puducherry", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana",
     "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal",
 ]
-_CANONICAL = {name.casefold(): name for name in STATE_NAMES}
-_ALIASES = {
+
+
+def _fold_state_key(value: Any) -> str:
+    """Normalize spelling variants from GIS attributes without changing canonical output names."""
+    text = unicodedata.normalize("NFKD", str(value or ""))
+    text = "".join(character for character in text if not unicodedata.combining(character))
+    text = text.casefold().replace("&", " and ")
+    text = re.sub(r"[^a-z0-9]+", " ", text)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+_CANONICAL = {_fold_state_key(name): name for name in STATE_NAMES}
+_ALIAS_SOURCE = {
     "andaman & nicobar": "Andaman and Nicobar Islands",
     "andaman and nicobar": "Andaman and Nicobar Islands",
     "andaman & nicobar islands": "Andaman and Nicobar Islands",
+    "andaman and nicobar island": "Andaman and Nicobar Islands",
+    "andaman & nicobar island": "Andaman and Nicobar Islands",
     "nct of delhi": "Delhi",
     "national capital territory of delhi": "Delhi",
     "jammu & kashmir": "Jammu and Kashmir",
@@ -35,6 +49,8 @@ _ALIASES = {
     "pondicherry": "Puducherry",
     "orissa": "Odisha",
     "dadra & nagar haveli and daman & diu": "Dadra and Nagar Haveli and Daman and Diu",
+    "dadra and nagar haveli, daman and diu": "Dadra and Nagar Haveli and Daman and Diu",
+    "dadra and nagar haveli and daman and diu": "Dadra and Nagar Haveli and Daman and Diu",
     "ut of d&nh and d&d": "Dadra and Nagar Haveli and Daman and Diu",
     "ut of d&nh and d&d.": "Dadra and Nagar Haveli and Daman and Diu",
     "dadra and nagar haveli": "Dadra and Nagar Haveli and Daman and Diu",
@@ -42,10 +58,12 @@ _ALIASES = {
     "dadra & nagar haveli and daman & diu": "Dadra and Nagar Haveli and Daman and Diu",
     "daman and diu": "Dadra and Nagar Haveli and Daman and Diu",
 }
+_ALIASES = {_fold_state_key(alias): canonical for alias, canonical in _ALIAS_SOURCE.items()}
+
 
 def normalize_state_name(value: Any) -> str:
     text = re.sub(r"\s+", " ", str(value or "").strip()).strip(" ,.;")
-    key = text.casefold()
+    key = _fold_state_key(text)
     if key in _CANONICAL:
         return _CANONICAL[key]
     if key in _ALIASES:
@@ -56,11 +74,12 @@ def normalize_state_name(value: Any) -> str:
         half = len(words) // 2
         if [w.casefold() for w in words[:half]] == [w.casefold() for w in words[half:]]:
             return normalize_state_name(" ".join(words[:half]))
-    # Boundary files sometimes provide a multipart UT as separate named parts.
+    # Boundary files sometimes provide a multipart UT with a descriptive prefix.
     for alias, canonical in sorted(_ALIASES.items(), key=lambda item: len(item[0]), reverse=True):
-        if key == alias or key in {f"state of {alias}", f"union territory of {alias}"}:
+        if key in {f"state of {alias}", f"union territory of {alias}"}:
             return canonical
     return ""
+
 
 def _feature_state(properties: dict[str, Any]) -> str:
     # Try common administrative-name fields first, then any string property.
@@ -77,6 +96,7 @@ def _feature_state(properties: dict[str, Any]) -> str:
             if normalized:
                 return normalized
     return ""
+
 
 @lru_cache(maxsize=4)
 def _load_state_boundaries_cached(path_text: str):
@@ -120,8 +140,10 @@ def _load_state_boundaries_cached(path_text: str):
         country = country.buffer(0)
     return polygons, country, missing
 
+
 def load_state_boundaries(path: str | Path | None = None):
     return _load_state_boundaries_cached(str(Path(path or BOUNDARY_PATH).resolve()))
+
 
 def boundary_file_ready(path: str | Path | None = None) -> bool:
     try:
@@ -130,14 +152,17 @@ def boundary_file_ready(path: str | Path | None = None) -> bool:
     except (FileNotFoundError, RuntimeError, OSError, json.JSONDecodeError):
         return False
 
+
 def point_inside_india(lat: float, lon: float, path: str | Path | None = None) -> bool:
     _, country, _ = load_state_boundaries(path)
     return bool(country.covers(Point(float(lon), float(lat))))
+
 
 def matching_states(lat: float, lon: float, path: str | Path | None = None) -> list[str]:
     polygons, _, _ = load_state_boundaries(path)
     point = Point(float(lon), float(lat))
     return sorted(name for name, polygon in polygons.items() if polygon.covers(point))
+
 
 def point_inside_state(state: str, lat: float, lon: float, path: str | Path | None = None) -> bool:
     polygons, _, _ = load_state_boundaries(path)
