@@ -1,24 +1,17 @@
-# Repository review and four-hour MVP scope
+# Implementation Notes
 
-## Starting point inspected
+## Current components
 
-The public `AnshXGrind/ev-proje` main branch contained:
-- `configs/regions.yaml`
-- `scripts/fetch_roads.py`, `fetch_chargers.py`, `clean_data.py`, `validate_data.py`, `build_candidates.py`, `render_map.py`, `render_north_india_map.py`
-- `src/evplanner/config.py` and geospatial I/O helper
-- `pyproject.toml`, `requirements.txt`, and a short README
+- FastAPI serves the dashboard and JSON endpoints.
+- The dashboard provides inventory summaries, region filters, station search, CSV export and a map of reported charger locations.
+- DBSCAN groups approximate charger coordinates by geographic proximity.
+- The baseline planner ranks midpoint candidates using straight-line distances and user-provided budget assumptions.
+- The Route Planner compares a selected driving route with nearby inventory and sampled elevation data.
 
-There was no working FastAPI endpoint layer or application dashboard. The repository's `.gitignore` excludes generated data beneath `data/processed`, so the extracted inventory has to exist locally at runtime.
+## Data requirements
 
-## This MVP adds
+The local file `data/processed/north_india_ev_chargers_map.geojson` is required for inventory analysis and is not stored in this repository. The inventory is a dated public snapshot; it does not provide live operating status or charging-session history.
 
-- A single local FastAPI server serving the frontend and JSON API.
-- North India inventory health, metrics, state and charger-type analytics, station search, and CSV export.
-- Interactive state-filtered Leaflet map with clustered charger markers and charger-detail popups.
-- Scikit-learn DBSCAN clustering using Haversine distance over approximate coordinate groups.
-- Budget configurable midpoint gap-screening planner and CSV export.
-- Approximate broad region envelopes to prevent obvious state-label/coordinate anomalies from being used as planning endpoints.
+## Limits
 
-## Deliberate scope limits
-
-A four-hour MVP cannot honestly train a validated EV-demand forecaster without suitable session time-series targets. It also cannot verify real grid hosting capacity without feeder/transformer topology and measurements. The UI exposes these as data gaps instead of inventing results.
+Candidate points need checks for land availability, road access, permissions and safety. A measured demand forecast requires traffic or charging-session observations. Electrical feasibility requires verified feeder, transformer and load information from the relevant utility.
