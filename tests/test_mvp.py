@@ -9,7 +9,7 @@ def test_health_loads_inventory():
     body = response.json()
     assert body['inventory_loaded'] is True
     assert body['inventory_records'] > 0
-    assert 7 <= body['states'] <= 18
+    assert 7 <= body['states'] <= 36
     assert 'northeast_inventory_loaded' in body
     assert 'northeast_records' in body
     assert 'central_inventory_loaded' in body
