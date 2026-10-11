@@ -1,4 +1,4 @@
-# GRIDPULSE: Bihar, Uttar Pradesh and Madhya Pradesh add-on
+# EV-Yojna: Bihar, Uttar Pradesh and Madhya Pradesh add-on
 
 ## Install
 
