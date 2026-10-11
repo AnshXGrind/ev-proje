@@ -1,6 +1,6 @@
 # Route Planner
 
-This module adds a Route Planner page to GRIDPULSE. In India-wide mode, manual coordinates, routed geometry and proposed candidate points must pass the validated India boundary check.
+This module adds a Route Planner page to EV-Yojna. In India-wide mode, manual coordinates, routed geometry and proposed candidate points must pass the validated India boundary check.
 
 ## Install on Windows
 
