@@ -16,7 +16,11 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from sklearn.cluster import DBSCAN
 from sklearn.neighbors import BallTree
-from app.geo_boundaries import normalize_state_name as normalize_boundary_state
+from app.geo_boundaries import (
+    normalize_state_name as normalize_boundary_state,
+    point_inside_india,
+    point_inside_state,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA_PATH = ROOT / "data" / "processed" / "north_india_ev_chargers_map.geojson"
@@ -536,13 +540,13 @@ def analytics(state: str = "All North India") -> dict:
         if kw is None:
             band = "Unknown"
         elif kw <= 7.4:
-            band = "≤7.4 kW"
+            band = "â‰¤7.4 kW"
         elif kw <= 22:
-            band = "7.5–22 kW"
+            band = "7.5â€“22 kW"
         elif kw < 50:
-            band = "22–49 kW"
+            band = "22â€“49 kW"
         else:
-            band = "≥50 kW"
+            band = "â‰¥50 kW"
         power_bands[band] += 1
     return {
         "state": normalize_state(state) if state not in {"All North India", "All India", "All covered regions"} else state,
