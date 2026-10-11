@@ -1,6 +1,6 @@
-# North & Northeast India EV Planner (MVP)
+# GRIDPULSE India-wide EV Planner (MVP)
 
-This adds a local FastAPI backend and an interactive dashboard to the existing `ev-proje` project. It uses the filtered BEE public charging-station inventory already extracted from the PDF. No Open Charge Map API key is needed.
+This adds a local FastAPI backend and interactive dashboard for BEE source inventory. The India-wide expansion must be installed with update_gridpulse_india_expansion.ps1; national inventory mode requires a completed official boundary validation. No Open Charge Map API key is needed.
 
 ## Run on Windows
 
@@ -15,6 +15,14 @@ This adds a local FastAPI backend and an interactive dashboard to the existing `
 3. The app opens at `http://127.0.0.1:8000`. Keep the terminal window open. Swagger API docs are at `http://127.0.0.1:8000/docs`.
 
 The startup script installs four runtime dependencies into the project `.venv`: FastAPI, Uvicorn, NumPy and scikit-learn.
+
+## India-wide mode
+
+Extract the India-wide expansion bundle into the project root and run:
+
+    powershell.exe -NoProfile -ExecutionPolicy Bypass -File "C:\EV\ev proje\update_gridpulse_india_expansion.ps1" -ProjectRoot "C:\EV\ev proje"
+
+The installer updates app code, prepares all 36 state/UT polygons from Survey of India / NWIC data, validates each source point, writes an all-row audit and state summary, and runs focused tests. Read INSTALL_GRIDPULSE_INDIA.md for boundary-download fallback and data caveats. National mode will not silently fall back to the older 18-region subset if validation is missing.
 
 ## What works
 
@@ -33,9 +41,13 @@ The startup script installs four runtime dependencies into the project `.venv`: 
 - Per-site cost is an editable scenario assumption, not a sourced price quote.
 - Local feeder/transformer capacity, traffic counts, and hourly session history are not present; no real grid hosting-capacity or validated demand forecast is claimed.
 
-## North-East inventory
+## Legacy supplemental inventory
 
 To include the eight North-Eastern states, copy `northeast_ev_chargers_map.geojson` into `data/processed/` alongside the existing North India file. The supplemental file contains 645 mapped records extracted from the BEE snapshot dated 26 October 2025. It is a dated source inventory, not live status or a verified count of unique operating sites. The `/api/health` endpoint reports `northeast_inventory_loaded` and `northeast_records` so you can confirm the file was found.
+
+## Bihar, Uttar Pradesh and Madhya Pradesh inventory
+
+Copy `central_states_ev_chargers_map.geojson` into `data/processed/` alongside the existing North India and North-East files. It contains 4,080 mapped source records extracted from the BEE snapshot labelled through 26 October 2025. The records are not a live status feed or a verified count of unique operating physical sites. The `/api/health` endpoint reports `central_inventory_loaded` and `central_records` so you can confirm the file was found.
 
 ## Local data layout
 

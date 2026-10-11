@@ -66,3 +66,21 @@ regions:
     place: "Agartala, Tripura, India"
     profile: "northeast_urban_transport"
     center: [23.8315, 91.2868]
+
+  central_bihar_patna:
+    display_name: "Patna - Bihar regional hub"
+    place: "Patna, Bihar, India"
+    profile: "north_central_urban_transport"
+    center: [25.5941, 85.1376]
+
+  central_uttar_pradesh_lucknow:
+    display_name: "Lucknow - Uttar Pradesh regional hub"
+    place: "Lucknow, Uttar Pradesh, India"
+    profile: "north_central_urban_transport"
+    center: [26.8467, 80.9462]
+
+  central_madhya_pradesh_bhopal:
+    display_name: "Bhopal - Madhya Pradesh regional hub"
+    place: "Bhopal, Madhya Pradesh, India"
+    profile: "central_india_urban_transport"
+    center: [23.2599, 77.4126]
