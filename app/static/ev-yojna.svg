@@ -28,9 +28,7 @@
     <circle cx="112" cy="28" r="5" fill="#21875b"/>
   </g>
   <g>
-    <text x="173" y="74" fill="#142744" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="49" font-weight="850" letter-spacing="-1.5">EV</text>
-    <text x="236" y="74" fill="#142744" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="48" font-weight="500" letter-spacing="-1">-</text>
-    <text x="256" y="74" fill="#142744" font-family="Nirmala UI, Mangal, 'Noto Sans Devanagari', sans-serif" font-size="43" font-weight="800" letter-spacing="-.6">योजना</text>
+    <text x="173" y="74" fill="#142744" font-weight="800" letter-spacing="-1"><tspan font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="49">EV-</tspan><tspan font-family="Nirmala UI, Mangal, 'Noto Sans Devanagari', sans-serif" font-size="43" dx="2">योजना</tspan></text>
     <rect x="176" y="91" width="45" height="4" rx="2" fill="#98c84a"/>
     <text x="176" y="120" fill="#61718a" font-family="Nirmala UI, Mangal, 'Noto Sans Devanagari', sans-serif" font-size="18" font-weight="600">भारत का ईवी चार्जिंग प्लानर</text>
   </g>
