@@ -1,4 +1,4 @@
-# GRIDPULSE — India-wide inventory and boundary validation
+# EV-Yojna — India-wide inventory and boundary validation
 
 This expansion adds a nationwide BEE source inventory and a required point-in-polygon validation step. It is a research/planning dataset, not a live charger-status service.
 
