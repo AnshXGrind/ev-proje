@@ -18,12 +18,3 @@ outputs/maps/*
 !outputs/maps/.gitkeep
 outputs/reports/*
 !outputs/reports/.gitkeep
-# Local environments and generated files
-.venv/
-__pycache__/
-.pytest_cache/
-*.py[cod]
-.env
-.env.*
-!.env.example
-.backup-*/
