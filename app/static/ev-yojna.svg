@@ -1,23 +1,37 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="600" height="156" viewBox="0 0 600 156" role="img" aria-labelledby="logo-title logo-desc">
-  <title id="logo-title">ईवी-योजना</title>
-  <desc id="logo-desc">भारत का ईवी चार्जिंग प्लानर — an electric vehicle and charging bolt logo.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="156" viewBox="0 0 560 156" role="img" aria-labelledby="logo-title logo-desc">
+  <title id="logo-title">EV-योजना</title>
+  <desc id="logo-desc">An electric-vehicle charging station icon followed by EV-योजना, भारत का ईवी चार्जिंग प्लानर.</desc>
   <defs>
-    <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d7f68f"/><stop offset="1" stop-color="#8fbe40"/></linearGradient>
-    <linearGradient id="bolt" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2f68df"/><stop offset="1" stop-color="#163b83"/></linearGradient>
+    <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#d9f894"/>
+      <stop offset="1" stop-color="#91bf42"/>
+    </linearGradient>
+    <linearGradient id="bolt" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4f83ff"/>
+      <stop offset="1" stop-color="#234fba"/>
+    </linearGradient>
   </defs>
-  <g id="symbol" transform="translate(8 8)">
+  <g id="charger-mark" transform="translate(8 8)">
     <rect width="140" height="140" rx="34" fill="url(#tile)"/>
-    <rect x="1" y="1" width="138" height="138" rx="33" fill="none" stroke="#537b21" stroke-opacity=".18" stroke-width="2"/>
-    <path d="M25 74 34 51c2.1-5.5 7.1-9 13-9h45c5.9 0 10.9 3.5 13 9l9 23 6.5 3.4c3 1.5 4.9 4.6 4.9 8v20.1c0 4.4-3.6 8-8 8h-5.7V124H99v-10.5H41V124H28.3v-10.5h-5.7c-4.4 0-8-3.6-8-8V85.4c0-3.4 1.9-6.5 4.9-8z" fill="#173359"/>
-    <path d="m40 52-7.2 17.8h67.4L93 52c-1-2.4-3.3-4-5.9-4H45.9c-2.6 0-4.9 1.6-5.9 4z" fill="#f9fcff"/>
-    <path d="M34 73h66l-2.8 7.2H36.8z" fill="#bfd5f7"/>
-    <circle cx="36.5" cy="92" r="5.5" fill="#eff5ff"/><circle cx="97.5" cy="92" r="5.5" fill="#eff5ff"/>
-    <path d="m73 60-19 28h15l-6 25 25-34H72z" fill="url(#bolt)" stroke="#f7fbff" stroke-width="2.5" stroke-linejoin="round"/>
-    <path d="M24 19h30" stroke="#f28a32" stroke-width="5" stroke-linecap="round"/><path d="M59 19h22" stroke="#fff" stroke-width="5" stroke-linecap="round"/><path d="M86 19h30" stroke="#21875b" stroke-width="5" stroke-linecap="round"/>
+    <rect x="1" y="1" width="138" height="138" rx="33" fill="none" stroke="#527b20" stroke-opacity=".18" stroke-width="2"/>
+    <rect x="35" y="20" width="57" height="92" rx="13" fill="#163052"/>
+    <rect x="42" y="28" width="43" height="36" rx="7" fill="#f5f9ff"/>
+    <path d="m65 31-13 19h10l-3 13 15-21H64z" fill="url(#bolt)"/>
+    <rect x="43" y="74" width="41" height="6" rx="3" fill="#9eb4d1"/>
+    <rect x="43" y="85" width="27" height="5" rx="2.5" fill="#7189ad"/>
+    <path d="M92 42h8c7 0 12 5 12 12v17c0 8 5 13 12 13" fill="none" stroke="#163052" stroke-width="7" stroke-linecap="round"/>
+    <path d="M123 79v13" stroke="#163052" stroke-width="7" stroke-linecap="round"/>
+    <rect x="115" y="89" width="16" height="23" rx="5" fill="#163052"/>
+    <path d="M120 94v8m6-8v8" stroke="#f5f9ff" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M49 115h29" stroke="#163052" stroke-width="5" stroke-linecap="round" opacity=".75"/>
+    <circle cx="28" cy="28" r="5" fill="#f28a32"/>
+    <circle cx="112" cy="28" r="5" fill="#21875b"/>
   </g>
-  <g fill="#142744">
-    <text x="176" y="75" font-family="Nirmala UI, Mangal, 'Noto Sans Devanagari', sans-serif" font-size="47" font-weight="800" letter-spacing="-.5">ईवी-योजना</text>
-    <rect x="178" y="91" width="48" height="4" rx="2" fill="#98c84a"/>
-    <text x="178" y="121" font-family="Nirmala UI, Mangal, 'Noto Sans Devanagari', sans-serif" font-size="19" font-weight="600" fill="#61718a">भारत का ईवी चार्जिंग प्लानर</text>
+  <g>
+    <text x="173" y="74" fill="#142744" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="49" font-weight="850" letter-spacing="-1.5">EV</text>
+    <text x="236" y="74" fill="#142744" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="48" font-weight="500" letter-spacing="-1">-</text>
+    <text x="256" y="74" fill="#142744" font-family="Nirmala UI, Mangal, 'Noto Sans Devanagari', sans-serif" font-size="43" font-weight="800" letter-spacing="-.6">योजना</text>
+    <rect x="176" y="91" width="45" height="4" rx="2" fill="#98c84a"/>
+    <text x="176" y="120" fill="#61718a" font-family="Nirmala UI, Mangal, 'Noto Sans Devanagari', sans-serif" font-size="18" font-weight="600">भारत का ईवी चार्जिंग प्लानर</text>
   </g>
 </svg>
