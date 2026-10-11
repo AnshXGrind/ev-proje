@@ -1,11 +1,18 @@
 .venv/
 __pycache__/
+.pytest_cache/
 *.py[cod]
 *.egg-info/
 .env
+.env.*
+!.env.example
 .vscode/
 .idea/
+.backup-*/
+.backup_*/
+backup-*/
 
+# Generated or locally sourced data; retain directory placeholders
 data/raw/*
 !data/raw/.gitkeep
 data/interim/*
@@ -18,12 +25,3 @@ outputs/maps/*
 !outputs/maps/.gitkeep
 outputs/reports/*
 !outputs/reports/.gitkeep
-# Local environments and generated files
-.venv/
-__pycache__/
-.pytest_cache/
-*.py[cod]
-.env
-.env.*
-!.env.example
-.backup-*/
