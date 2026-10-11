@@ -42,7 +42,7 @@ def _download_boundary() -> None:
     print("Downloading the official Survey of India/NWIC state-boundary GeoJSON...")
     request = urllib.request.Request(
         BOUNDARY_URL,
-        headers={"User-Agent": "GRIDPULSE-IndiaBoundaryAudit/1.0"},
+        headers={"User-Agent": "EV-Yojna-IndiaBoundaryAudit/1.0"},
     )
     try:
         with urllib.request.urlopen(request, timeout=60) as response, BOUNDARY_ZIP_PATH.open("wb") as target:
@@ -181,7 +181,7 @@ def validate() -> dict[str, Any]:
     if not SOURCE_PATH.exists():
         raise FileNotFoundError(
             f"Raw all-India candidate inventory missing: {SOURCE_PATH}. "
-            "Extract the complete GRIDPULSE India expansion bundle into the project root first."
+            "Extract the complete EV-Yojna India expansion bundle into the project root first."
         )
     _extract_boundaries()
     polygons, country_union, missing = load_state_boundaries(BOUNDARY_PATH)
@@ -306,7 +306,7 @@ def validate() -> dict[str, Any]:
     }
     result = {
         "type": "FeatureCollection",
-        "name": "GRIDPULSE India EV Charging Inventory",
+        "name": "EV-Yojna India EV Charging Inventory",
         "metadata": source.get("metadata", {}),
         "boundary_validation": metadata,
         "features": output_features,
