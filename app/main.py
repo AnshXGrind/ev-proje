@@ -16,7 +16,11 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from sklearn.cluster import DBSCAN
 from sklearn.neighbors import BallTree
-from app.geo_boundaries import normalize_state_name as normalize_boundary_state
+from app.geo_boundaries import (
+    normalize_state_name as normalize_boundary_state,
+    point_inside_india,
+    point_inside_state,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA_PATH = ROOT / "data" / "processed" / "north_india_ev_chargers_map.geojson"
