@@ -1,7 +1,7 @@
-# GRIDPULSE
+# EV-Yojna
 ### India-wide EV charging infrastructure planning
 
-**GRIDPULSE** turns public EV charging-station records into a map-first planning workflow: explore existing charger records, inspect spatial clusters, screen potential coverage gaps, and review a driving corridor against charger proximity, terrain and vehicle-range assumptions.
+**EV-Yojna** turns public EV charging-station records into a map-first planning workflow: explore existing charger records, inspect spatial clusters, screen potential coverage gaps, and review a driving corridor against charger proximity, terrain and vehicle-range assumptions.
 
 > **Research prototype, not a deployment approval system.** Source inventory: Bureau of Energy Efficiency (BEE), snapshot dated **26 October 2025**. Live operating status, unique physical-site count, measured charging demand and electrical grid capacity are not verified.
 
@@ -56,7 +56,7 @@ The route planner is a **transparent rule-based screening tool**, not a model tr
 ## Architecture
 
 ```text
-GRIDPULSE
+EV-Yojna
 ├── app/
 │   ├── main.py                 FastAPI app, inventory, clustering, dashboard APIs
 │   ├── geo_boundaries.py       State/UT normalization and boundary predicates
@@ -137,4 +137,4 @@ The default branch is `main`; this README was updated on the nationwide feature 
 
 ---
 
-**GRIDPULSE — map the inventory, screen the gaps, validate before deployment.**
+**EV-Yojna — map the inventory, screen the gaps, validate before deployment.**
