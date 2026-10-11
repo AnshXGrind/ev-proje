@@ -1,4 +1,4 @@
-# GRIDPULSE India-wide EV Planner (MVP)
+# EV-Yojna India-wide EV Planner (MVP)
 
 This adds a local FastAPI backend and interactive dashboard for BEE source inventory. The India-wide expansion must be installed with update_gridpulse_india_expansion.ps1; national inventory mode requires a completed official boundary validation. No Open Charge Map API key is needed.
 
