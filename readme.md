@@ -1,40 +1,40 @@
 # GRIDPULSE
 ### India-wide EV charging infrastructure planning
 
-**GRIDPULSE** turns a dated public charging-station inventory into a map-first planning workflow: inspect existing charger records, identify *candidate* coverage gaps, and screen a driving corridor against charger proximity, terrain and vehicle-range assumptions.
+**GRIDPULSE** turns public EV charging-station records into a map-first planning workflow: explore existing charger records, inspect spatial clusters, screen potential coverage gaps, and review a driving corridor against charger proximity, terrain and vehicle-range assumptions.
 
-> **Research prototype, not a deployment approval system.** Inventory source: Bureau of Energy Efficiency (BEE), snapshot dated **26 October 2025**. Operating status, unique physical-site count, traffic demand and electrical grid capacity are not verified by this repository.
+> **Research prototype, not a deployment approval system.** Source inventory: Bureau of Energy Efficiency (BEE), snapshot dated **26 October 2025**. Live operating status, unique physical-site count, measured charging demand and electrical grid capacity are not verified.
 
-[Dashboard](#run-locally) · [Architecture](#how-it-works) · [Data pipeline](#data-and-validation) · [API docs](#api) · [Limitations](#what-the-results-mean)
+[Run locally](#run-locally) · [System flow](#how-it-works) · [Data validation](#data-and-validation) · [API](#api) · [Limitations](#what-the-results-mean)
 
 ---
 
-## At a glance
+## What it does
 
-| Layer | What it does |
+| Capability | Purpose |
 |---|---|
-| **Explore** | Interactive map, region/state filters, charger detail search, inventory summaries and exports |
-| **Cluster** | DBSCAN with Haversine distance groups nearby coordinate records for spatial inspection |
-| **Screen gaps** | Straight-line midpoint candidates offer a first-pass view of potential coverage gaps |
-| **Plan a route** | OSRM driving geometry + sampled elevation + transparent range/reserve/terrain scenarios |
-| **Validate India coverage** | Official state/UT boundaries validate coordinates; excluded/corrected source rows are audited |
-| **Inspect API** | FastAPI endpoints and interactive OpenAPI documentation |
+| **Inventory dashboard** | Interactive map, state/region filters, search, charger summaries and exports |
+| **Spatial clustering** | DBSCAN with Haversine distance groups nearby coordinate records |
+| **Coverage-gap screening** | Straight-line midpoint candidates identify places to investigate further |
+| **Route planner** | Driving route, sampled elevation, terrain/range assumptions and spacing scenarios |
+| **India boundary validation** | Checks source points against official state/UT polygons and audits exclusions/corrections |
+| **Developer API** | FastAPI endpoints with interactive OpenAPI docs |
 
 ## How it works
 
 ```mermaid
 flowchart TD
-    A["BEE public-charger PDF snapshot"] --> B["Extract candidate coordinate rows"]
-    B --> C["Normalize fields and coordinates"]
+    A["BEE public charging-station PDF snapshot"] --> B["Extract candidate coordinate rows"]
+    B --> C["Normalize and standardize records"]
     D["Survey of India / NWIC state boundaries"] --> E["Reproject boundaries to WGS84"]
-    C --> F["Point-in-polygon validation"]
+    C --> F["Point-in-polygon checks"]
     E --> F
-    F --> G{"36 State/UT polygons present and validation passed?"}
-    G -- "No" --> H["Stop: do not present partial data as all-India"]
-    G -- "Yes" --> I["Accepted GeoJSON + row-level audit + state summary"]
-    I --> J["FastAPI inventory and analytics"]
-    J --> K["Dashboard / clustering / gap screening"]
-    J --> L["Route planner / scenario outputs"]
+    F --> G{"All 36 state/UT polygons and validation passed?"}
+    G -- "No" --> H["Stop: don't present partial data as nationwide"]
+    G -- "Yes" --> I["Validated inventory + full row audit + state summary"]
+    I --> J["FastAPI backend"]
+    J --> K["Dashboard: search, clusters, gap screening"]
+    J --> L["Route planner: terrain/range scenarios"]
 ```
 
 ## Route-planning flow
@@ -44,40 +44,40 @@ flowchart LR
     A["Origin + destination"] --> B["Nominatim place lookup"]
     B --> C["OSRM driving route"]
     C --> D["Sample route elevation"]
-    D --> E["Terrain + usable-range assumptions"]
-    F["Validated charger inventory"] --> G["Nearby charger / gap screening"]
+    D --> E["Terrain and usable-range assumptions"]
+    F["Validated charger inventory"] --> G["Nearby inventory / gaps"]
     E --> G
-    G --> H["Candidate spacing + map + CSV/JSON export"]
-    H --> I["Human review before field validation"]
+    G --> H["Candidate spacing + map + CSV/JSON"]
+    H --> I["Human review and field validation"]
 ```
 
-The route tool is a **transparent rule-based screen**, not a model trained on measured charging sessions. It does not replace utility feasibility studies or site surveys.
+The route planner is a **transparent rule-based screening tool**, not a model trained on measured charging sessions.
 
 ## Architecture
 
 ```text
 GRIDPULSE
 ├── app/
-│   ├── main.py                FastAPI app, inventory loading, clustering & dashboard APIs
-│   ├── geo_boundaries.py      State-name normalization and boundary predicates
-│   ├── route_api.py           Geocoding, road route, elevation and spacing scenarios
+│   ├── main.py                 FastAPI app, inventory, clustering, dashboard APIs
+│   ├── geo_boundaries.py       State/UT normalization and boundary predicates
+│   ├── route_api.py            Routing, elevation and spacing scenarios
 │   └── static/
-│       ├── index.html         Main interactive dashboard
-│       └── route_planner.html Route planner interface
+│       ├── index.html          Main interactive dashboard
+│       └── route_planner.html  Route-planning interface
 ├── scripts/
-│   ├── prepare_india_inventory.py  National boundary validation + audit generation
-│   ├── validate_data.py            Data checks
-│   └── render_* / fetch_*           Supporting data and map utilities
-├── configs/regions.yaml      Region configuration
-├── data/                      Raw/interim/processed/reports (generated data is ignored)
-├── tests/                     Regression tests for API, route logic, regions and boundaries
-├── INSTALL_GRIDPULSE_INDIA.md India-wide installation and data notes
-└── requirements.txt           Runtime + test dependencies
+│   ├── prepare_india_inventory.py  National validation + audit generation
+│   ├── validate_data.py            Data validation utilities
+│   └── fetch_* / render_*           Supporting data and map utilities
+├── configs/regions.yaml        Region configuration
+├── data/                       Raw, interim, processed and report directories
+├── tests/                      API, route, region and boundary regression tests
+├── INSTALL_GRIDPULSE_INDIA.md  India-wide setup and data preparation
+└── requirements.txt            Python dependencies
 ```
 
 ## Run locally
 
-Python 3.10+ is required. In PowerShell, from the repository root:
+Requirements: Python 3.10+. Run in PowerShell from the repository root:
 
 ```powershell
 python -m venv .venv
@@ -90,9 +90,9 @@ Open:
 - Dashboard: http://127.0.0.1:8000
 - Route planner: http://127.0.0.1:8000/route-planner
 - API reference: http://127.0.0.1:8000/docs
-- Health/configuration: http://127.0.0.1:8000/api/health
+- Health and configuration: http://127.0.0.1:8000/api/health
 
-For a fresh clone, install or generate the data assets described in [INSTALL_GRIDPULSE_INDIA.md](INSTALL_GRIDPULSE_INDIA.md). Nationwide mode requires the raw BEE candidate inventory and official boundary dataset to be prepared and validated; the app is designed to fail closed instead of silently presenting a regional subset as nationwide data. Keep raw data, generated reports and processed map assets local unless intentionally publishing a reviewed, redistributable dataset.
+For an all-India setup, follow [INSTALL_GRIDPULSE_INDIA.md](INSTALL_GRIDPULSE_INDIA.md). A fresh clone must have the required data assets prepared: nationwide mode requires the raw BEE candidate inventory, official boundary data and a successful validation output. The app is designed to fail closed instead of silently showing a regional subset as national coverage. Generated inventory and audit outputs may be ignored by Git, so follow the preparation guide rather than assuming they are shipped in the repository.
 
 Run tests:
 
@@ -102,35 +102,38 @@ Run tests:
 
 ## Data and validation
 
-The India-wide source contains **39,628 parsed candidate rows** from the BEE PDF snapshot. This number is not a count of distinct, currently operating physical stations.
+The BEE source parser produced **39,628 candidate rows** from a PDF snapshot. This is a source-row count, not a verified count of distinct or operational charging sites.
 
-The national preparation flow:
-1. Loads all required state/UT polygons from the Survey of India / NWIC boundary dataset.
-2. Reprojects source boundary geometry from its source CRS to WGS84 (longitude/latitude) before comparing charger points.
-3. normalizes state/UT spelling variants and performs point-in-polygon checks.
-4. Retains rows supported by polygon coverage, corrects a state label only when uniquely covered by another state/UT polygon, and excludes unresolved/outside points.
-5. Writes the validated inventory, row-level audit and per-state/UT summary for review.
+The nationwide preparation pipeline:
+1. Loads the required state/UT polygons from Survey of India / NWIC.
+2. Converts the boundary geometries from the source coordinate reference system to WGS84 longitude/latitude.
+3. Normalizes state/UT name variants and checks each candidate point against polygons.
+4. Keeps covered points, corrects a state label only when another polygon uniquely covers the point, and excludes unresolved/outside records.
+5. Writes the accepted inventory, a row-level audit and a state/UT summary.
 
-Official source links:
-- [BEE EV public charging-station data](https://www.beeindia.gov.in/show_content.php?lang=1&level=2&lid=67&ls_id=345)
-- [Survey of India / NWIC state-boundary dataset](https://nwdp.nwic.gov.in/dataset/state-boundary)
+Sources: [BEE EV public charging-station data](https://www.beeindia.gov.in/show_content.php?lang=1&level=2&lid=67&ls_id=345) · [Survey of India / NWIC state-boundary dataset](https://nwdp.nwic.gov.in/dataset/state-boundary)
 
 ## API
 
-Use the OpenAPI page at `/docs` to inspect and execute available endpoints. Key categories include health/configuration, inventory and search, regional summaries, spatial clustering, coverage-gap screening, boundary/source audit and route planning. Exact request schemas are defined by the running API, so treat `/docs` as the canonical endpoint reference.
+Use `/docs` on the running application to inspect exact endpoint paths, schemas and responses. It is the canonical reference for the installed code version.
 
 ## What the results mean
 
-**Useful for:** early spatial exploration, record clustering, corridor inventory review, parameterized spacing scenarios, and producing candidates for field investigation.
+**Good for:** initial spatial exploration, clustering, route inventory review, configurable spacing scenarios and candidate generation for field investigation.
 
-**Not established by this tool:** live uptime, unique physical-site deduplication, actual charging demand, real traffic counts, EV adoption forecasts, land ownership/availability, road access legality, charger procurement cost, feeder/transformer capacity, grid hosting capacity, voltage-drop analysis, permits, or construction approval. Candidate coordinates must be checked against the actual road, parcels, land permissions, utility data and current station status.
+**Not verified by this application:** live station uptime, unique physical-site deduplication, real traffic, measured charging demand, a trained EV-demand forecast, land availability, road access permissions, procurement pricing, feeder/transformer capacity, grid hosting capacity, voltage drop, permits or construction approval. Proposed points are hypotheses for review—not confirmed construction sites.
 
 ### External services
-The route-planning flow may call public Nominatim geocoding, OSRM routing and Open-Meteo elevation endpoints. These are best-effort public services, require internet connectivity and do not provide a production availability guarantee. Respect OpenStreetMap attribution and applicable usage policies.
 
-## Project status and branches
+Route planning may use public Nominatim geocoding, OSRM routing and Open-Meteo elevation. Internet access is required for new lookups; these are best-effort public services, not production availability guarantees. Respect OpenStreetMap attribution and service usage policies.
 
-The repository has multiple historical feature branches. The main branch is the default branch; the India-wide boundary-validation implementation currently lives on `feature/india-wide-coverage-validation` pending integration. See the [open nationwide coverage PR](https://github.com/AnshXGrind/ev-proje/pull/3) and the [merged Northeast](https://github.com/AnshXGrind/ev-proje/pull/1) and [central-state](https://github.com/AnshXGrind/ev-proje/pull/2) expansion PRs. The README describes intended behavior; always use the local test results and `/api/health` to confirm a specific checkout is ready.
+## Branch and integration status
+
+- [Nationwide boundary-validation PR #3](https://github.com/AnshXGrind/ev-proje/pull/3) — open; review merge conflicts/status before integration.
+- [Northeast expansion PR #1](https://github.com/AnshXGrind/ev-proje/pull/1) — merged.
+- [Central-state expansion PR #2](https://github.com/AnshXGrind/ev-proje/pull/2) — merged.
+
+The default branch is `main`; this README was updated on the nationwide feature branch. Check the branch shown in GitHub before presenting the project. After merging, verify the running app using `/api/health` and the local test suite.
 
 ---
 
