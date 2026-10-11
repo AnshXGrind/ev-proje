@@ -540,13 +540,13 @@ def analytics(state: str = "All North India") -> dict:
         if kw is None:
             band = "Unknown"
         elif kw <= 7.4:
-            band = "â‰¤7.4 kW"
+            band = "≤7.4 kW"
         elif kw <= 22:
-            band = "7.5â€“22 kW"
+            band = "7.5–22 kW"
         elif kw < 50:
-            band = "22â€“49 kW"
+            band = "22–49 kW"
         else:
-            band = "â‰¥50 kW"
+            band = "≥50 kW"
         power_bands[band] += 1
     return {
         "state": normalize_state(state) if state not in {"All North India", "All India", "All covered regions"} else state,
