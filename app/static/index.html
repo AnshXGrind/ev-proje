@@ -44,22 +44,18 @@
 @media(max-width:950px){.topright{gap:7px}.source-pill,.live-pill{padding:7px 9px}.source-copy strong,.live-copy strong{font-size:10px}}
 @media(max-width:760px){.topbar{height:66px;min-height:66px;padding:0 14px}.brand{gap:9px}.brand-mark{width:38px;height:38px;flex-basis:38px;border-radius:12px}.brand-mark svg{width:25px;height:25px}.brand h1{font-size:15px;letter-spacing:.13em}.brand p{display:none}.topright{gap:7px}.source-pill{display:none}.live-pill{min-height:36px;padding:6px 8px;border-radius:10px}.live-copy small{display:none}.live-copy strong{font-size:10px}.avatar{height:34px;width:34px;flex-basis:34px}.map-legend{gap:9px;max-width:calc(100% - 24px);flex-wrap:wrap}.legend-ev{width:17px;height:21px}.legend-ev svg{width:17px;height:21px}}
 
+
+/* Hindi EV-Yojna wordmark */
+.brand-logo{display:block;height:58px;width:auto;max-width:300px;object-fit:contain}
+@media(max-width:950px){.brand-logo{height:54px;max-width:265px}}
+@media(max-width:760px){.brand-logo{height:44px;max-width:190px}}
+
 </style>
 </head>
 <body>
 <div class="app">
 <header class="topbar">
-  <div class="brand">
-    <div class="brand-mark" aria-hidden="true">
-      <svg viewBox="0 0 40 40" focusable="false">
-        <path d="M7 22.5 9.5 15c.5-1.4 1.8-2.3 3.3-2.3h14.4c1.5 0 2.8.9 3.3 2.3l2.5 7.5v7.2c0 1-.8 1.8-1.8 1.8h-2v-3H11.6v3h-2c-1 0-1.8-.8-1.8-1.8z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
-        <path d="M12.2 22h15.6l-2-6H14.2z" fill="currentColor" opacity=".22"/>
-        <path d="m21.7 15.2-5 7h4l-2.1 6.5 6.8-9h-4.2z" fill="currentColor"/>
-        <circle cx="13" cy="24.5" r="1.5" fill="currentColor"/><circle cx="27" cy="24.5" r="1.5" fill="currentColor"/>
-      </svg>
-    </div>
-    <div class="brand-copy"><h1>GRIDPULSE</h1><p>INDIA-WIDE EV CHARGING NETWORK</p></div>
-  </div>
+  <div class="brand"><img class="brand-logo" src="/static/ev-yojna.svg" alt="ईवी-योजना — भारत का ईवी चार्जिंग प्लानर"></div>
   <div class="topright">
     <span class="source-pill"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 3.5h9.5A2.5 2.5 0 0 1 16 6v10.5H6.5A2.5 2.5 0 0 1 4 14z" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M4 13.5h12M7 7h6M7 9.5h4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><span class="source-copy"><strong>BEE inventory</strong><small>Snapshot · 26 Oct 2025</small></span></span>
     <span class="live-pill"><span class="dot" id="apiDot"></span><span class="live-copy"><strong id="apiStatus">Connecting API</strong><small>SYSTEM STATUS</small></span></span>
