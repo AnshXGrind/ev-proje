@@ -24,7 +24,7 @@ Write-Host "Installing/verifying app runtime dependencies..." -ForegroundColor C
 & $Python -m pip install -r (Join-Path $Root "requirements-mvp.txt")
 if ($LASTEXITCODE -ne 0) { throw "Dependency installation failed. Check network/pip output." }
 
-Write-Host "Starting GRIDPULSE API + frontend at http://127.0.0.1:8000" -ForegroundColor Green
+Write-Host "Starting EV-Yojna API + frontend at http://127.0.0.1:8000" -ForegroundColor Green
 Write-Host "Keep this terminal open. Press Ctrl+C to stop the server." -ForegroundColor Yellow
 Start-Job -ScriptBlock { Start-Sleep -Seconds 3; Start-Process "http://127.0.0.1:8000" } | Out-Null
 & $Python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
