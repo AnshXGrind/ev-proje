@@ -30,10 +30,10 @@ if (-not (Test-Path -LiteralPath $Python)) {
 
 $Stamp = Get-Date -Format "yyyyMMdd-HHmmss"
 $BackupRoot = Join-Path $ProjectRoot ".backup-india-expansion-$Stamp"
-$StageRoot = Join-Path $env:TEMP ("gridpulse-india-expansion-" + [guid]::NewGuid().ToString("N"))
+$StageRoot = Join-Path $env:TEMP ("EV-Yojna-india-expansion-" + [guid]::NewGuid().ToString("N"))
 New-Item -ItemType Directory -Path $StageRoot -Force | Out-Null
 
-Write-Host "GRIDPULSE India-wide update"
+Write-Host "EV-Yojna India-wide update"
 Write-Host "Project: $ProjectRoot"
 Write-Host "A backup of existing code files will be kept at: $BackupRoot"
 Write-Host ""

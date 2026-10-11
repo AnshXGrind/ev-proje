@@ -40,7 +40,7 @@ INDIA_RAW_PATH = ROOT / "data" / "raw" / "india_ev_chargers_raw.geojson"
 INDIA_BOUNDARY_PATH = ROOT / "data" / "processed" / "india_state_boundaries.geojson"
 ROUTE_HTML = ROOT / "app" / "static" / "route_planner.html"
 EARTH_RADIUS_KM = 6371.0088
-APP_UA = "GRIDPULSE-EVPlanner/0.4 (research prototype; github.com/AnshXGrind/ev-proje)"
+APP_UA = "EV-Yojna-EVPlanner/0.4 (research prototype; github.com/AnshXGrind/ev-proje)"
 NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
 OSRM_URL = "https://router.project-osrm.org/route/v1/driving"
 ELEVATION_URL = "https://api.open-meteo.com/v1/elevation"
@@ -960,4 +960,4 @@ def export_route_candidates(request: RouteAnalyzeRequest) -> StreamingResponse:
     writer.writeheader()
     writer.writerows(result["recommendations"])
     buf.seek(0)
-    return StreamingResponse(iter([buf.getvalue()]), media_type="text/csv", headers={"Content-Disposition": "attachment; filename=gridpulse_route_candidate_screening.csv"})
+    return StreamingResponse(iter([buf.getvalue()]), media_type="text/csv", headers={"Content-Disposition": "attachment; filename=ev-yojna_route_candidate_screening.csv"})

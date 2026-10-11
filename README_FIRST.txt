@@ -1,4 +1,4 @@
-GRIDPULSE INDIA-WIDE EXPANSION BUNDLE
+EV-Yojna INDIA-WIDE EXPANSION BUNDLE
 
 1. Stop the running Uvicorn server with Ctrl+C.
 2. Extract this ZIP into your existing project root: C:\EV\ev proje

@@ -6,12 +6,12 @@ $ErrorActionPreference = "Stop"
 $ProjectRoot = (Resolve-Path $ProjectRoot).Path
 
 if (!(Test-Path (Join-Path $ProjectRoot "app\main.py"))) {
-    throw "ProjectRoot does not look like GRIDPULSE: app\main.py was not found at $ProjectRoot"
+    throw "ProjectRoot does not look like EV-Yojna: app\main.py was not found at $ProjectRoot"
 }
 
 $baseUrl = "https://raw.githubusercontent.com/AnshXGrind/ev-proje/main"
 $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
-$staging = Join-Path $env:TEMP "gridpulse-central-update-$timestamp"
+$staging = Join-Path $env:TEMP "EV-Yojna-central-update-$timestamp"
 $backupRoot = Join-Path $ProjectRoot ".backup-central-update-$timestamp"
 
 $files = @(
@@ -31,7 +31,7 @@ $files = @(
 New-Item -ItemType Directory -Force -Path $staging | Out-Null
 
 Write-Host ""
-Write-Host "Downloading updated GRIDPULSE code..." -ForegroundColor Cyan
+Write-Host "Downloading updated EV-Yojna code..." -ForegroundColor Cyan
 foreach ($file in $files) {
     $relative = $file.Replace("/", "\")
     $target = Join-Path $staging $relative

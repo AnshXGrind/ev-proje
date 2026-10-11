@@ -11,3 +11,4 @@ pytest
 ruff
 fastapi
 uvicorn[standard]
+scikit-learn>=1.4,<2
