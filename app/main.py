@@ -86,7 +86,7 @@ STATE_ALIASES = {
 }
 
 app = FastAPI(
-    title="GRIDPULSE India-wide EV Charging Planner",
+    title="EV-Yojna India-wide EV Charging Planner",
     version="0.2.0",
     description=(
         "EV charging inventory, spatial clustering and "
@@ -120,7 +120,7 @@ def _load_geojson() -> dict:
         if validation.get("status") != "passed" or int(validation.get("boundary_state_count") or 0) != 36:
             raise RuntimeError(
                 "National charger inventory is not marked as boundary-validated. "
-                "Run scripts/prepare_india_inventory.py and review the boundary audit before starting GRIDPULSE."
+                "Run scripts/prepare_india_inventory.py and review the boundary audit before starting EV-Yojna."
             )
         if not INDIA_BOUNDARY_PATH.exists():
             raise RuntimeError("Validated national inventory exists but india_state_boundaries.geojson is missing.")
@@ -137,7 +137,7 @@ def _load_geojson() -> dict:
         raise RuntimeError(
             "The national raw inventory is present, but the boundary-validated India inventory is missing. "
             "Run scripts/prepare_india_inventory.py and review data/reports/india_ev_chargers_boundary_audit.csv. "
-            "GRIDPULSE will not silently show a partial regional inventory as nationwide coverage."
+            "EV-Yojna will not silently show a partial regional inventory as nationwide coverage."
         )
     if not DATA_PATH.exists():
         raise RuntimeError(
@@ -467,7 +467,7 @@ def health() -> dict:
         northeast_rows = sum(1 for row in rows if row["state"] in NORTHEAST_STATES)
         central_rows = sum(1 for row in rows if row["state"] in CENTRAL_STATES)
         validation = data.get("boundary_validation") or {}
-        return {"status": "ok", "service": "gridpulse-india-ev-planner", "inventory_loaded": True,
+        return {"status": "ok", "service": "ev-yojna-india-ev-planner", "inventory_loaded": True,
                 "inventory_records": len(rows), "states": len({r['state'] for r in rows}),
                 "northeast_inventory_loaded": national_loaded or NE_DATA_PATH.exists(),
                 "northeast_records": northeast_rows,
