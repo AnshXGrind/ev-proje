@@ -73,6 +73,52 @@ body{background:var(--bg);color:var(--ink)}
 @media(max-width:950px){.brand-logo{height:54px;max-width:265px}}
 @media(max-width:760px){.brand-logo{height:44px;max-width:190px}}
 
+
+/* EV-Yojna responsive balance: use the available viewport and align dashboard columns */
+html,body{width:100%;min-width:0}
+.app{width:100%;min-width:0}
+.shell{width:100%;grid-template-columns:clamp(220px,14vw,270px) minmax(0,1fr);align-items:stretch}
+.content{width:100%;max-width:none;margin:0;min-width:0;padding:clamp(20px,1.7vw,34px) clamp(18px,2vw,40px) 42px}
+.page-head{display:grid;grid-template-columns:minmax(0,1fr) minmax(320px, min(44%, 680px));align-items:center;gap:24px}
+.page-head>div:first-child{min-width:0}
+.head-tools{width:100%;min-width:0;justify-content:flex-end}
+.head-tools .select{width:100%;min-width:0;flex:1}
+.grid-main{grid-template-columns:minmax(0,1.8fr) minmax(320px,.9fr);align-items:stretch;gap:clamp(14px,1.2vw,22px)}
+.grid-main>.panel,.rightstack>.panel,.two-col>.panel,.lower-grid>.panel{min-width:0}
+.rightstack{grid-template-rows:auto auto;align-content:start;min-width:0}
+.metrics{gap:clamp(10px,.85vw,16px)}
+.metric{display:flex;flex-direction:column;min-height:150px;padding:clamp(14px,1vw,20px)}
+.metric-top{line-height:1.45}
+.metric-note{margin-top:auto;padding-top:10px;line-height:1.45}
+.map-wrap{height:clamp(420px,31vw,590px);min-height:380px;overflow:hidden;isolation:isolate}
+.map{height:100%;width:100%;min-height:0}
+.two-col,.lower-grid{align-items:stretch;gap:clamp(12px,1.2vw,22px)}
+.panel-head{min-width:0}
+.footer{align-items:flex-start}
+@media(max-width:1250px){
+  .shell{grid-template-columns:72px minmax(0,1fr)}
+  .content{padding:24px 22px 36px}
+  .page-head{grid-template-columns:minmax(0,1fr);gap:14px;align-items:start}
+  .head-tools{max-width:760px;justify-content:flex-start}
+  .grid-main{grid-template-columns:minmax(0,1fr)}
+  .rightstack{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:auto}
+  .map-wrap{height:460px;min-height:360px}
+}
+@media(max-width:760px){
+  .content{padding:16px 12px 28px}
+  .page-head{display:flex;flex-direction:column;align-items:stretch;gap:14px}
+  .head-tools{display:grid;grid-template-columns:minmax(0,1fr) auto;max-width:none}
+  .head-tools .select{min-width:0}
+  .metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+  .metric{min-height:136px;padding:13px}
+  .metric-value{font-size:clamp(21px,6vw,27px)}
+  .grid-main,.two-col,.lower-grid,.planner-grid{grid-template-columns:minmax(0,1fr);gap:12px}
+  .rightstack{grid-template-columns:minmax(0,1fr);grid-template-rows:auto}
+  .map-wrap{height:clamp(330px,78vw,430px);min-height:300px}
+  .map-legend{max-width:calc(100% - 20px);flex-wrap:wrap;gap:8px 12px}
+  .footer{flex-direction:column}
+}
+
 </style>
 </head>
 <body>
@@ -241,6 +287,14 @@ function planPayload(){return {state:$('planState').value,budget_lakh:Number($('
 function updateRangeLabels(){$('budgetVal').textContent='₹'+$('budget').value+' L';$('gapVal').textContent=$('gap').value+' km'}
 async function runPlan(){const btn=$('runPlan');btn.disabled=true;btn.textContent='Running spatial screening…';try{const d=await api('/api/plan',{method:'POST',body:JSON.stringify(planPayload())});currentPlan=d;$('pSites').textContent=d.recommended_sites;$('pCapex').textContent='₹'+d.estimated_total_capex_lakh+' L';$('pPower').textContent=num(d.planned_total_power_kw)+' kW';$('planMapTag').textContent=d.recommended_sites+' candidates';$('planResults').innerHTML=d.recommendations.length?d.recommendations.map(c=>`<div class="result-row"><div class="rank">${c.rank}</div><div><h4>${escapeHtml(c.candidate_id)} <span class="chip amber">screening only</span></h4><p>${c.lat}, ${c.lon} · Nearest record ${c.nearest_existing_km} km · Pair gap ${c.neighbor_pair_gap_km} km<br>${escapeHtml(c.reason)}</p></div><div class="score">${c.gap_score}<br><small>/100</small></div></div>`).join(''):'<div class="empty">No candidate zones meet this gap threshold. Try a wider target distance or another region.</div>';if(d.limitations.length)$('planResults').insertAdjacentHTML('beforeend',`<div class="disclaimer">${d.limitations.map(escapeHtml).join('<br>')}</div>`);$('exportPlan').disabled=!d.recommendations.length;await loadMap(d.state,'planner');drawCandidates(planMap,d.recommendations);if(activePage==='planner')setTimeout(()=>planMap.invalidateSize(),100);toast('Planning baseline completed. Review the assumptions and limitations.')}catch(e){toast('Planning failed: '+e.message)}finally{btn.disabled=false;btn.textContent='▶ Run coverage-gap screening'}}
 async function runClusters(){const btn=$('runClusters');btn.disabled=true;btn.textContent='Running DBSCAN…';try{const d=await api(`/api/clusters?state=${encodeURIComponent($('clusterState').value)}&eps_km=${$('eps').value}&min_samples=${$('minSamples').value}`);$('clusterSummary').innerHTML=`<div class="plan-summary" style="padding:0 0 12px"><div class="plan-kpi"><span>Clusters found</span><strong>${num(d.cluster_count||0)}</strong></div><div class="plan-kpi"><span>Noise points</span><strong>${num(d.noise_locations||0)}</strong></div><div class="plan-kpi"><span>Coordinate groups</span><strong>${num(d.coordinate_groups||0)}</strong></div></div>`+(d.clusters||[]).slice(0,10).map(c=>`<div class="result-row"><div class="rank">${c.cluster_id+1}</div><div><h4>Cluster ${c.cluster_id+1}</h4><p>Centroid ${c.center_lat}, ${c.center_lon}<br>${num(c.coordinate_groups)} approximate coordinate groups</p></div><div class="score">${num(c.coordinate_groups)}<br><small>points</small></div></div>`).join('')+`<p class="small-note">DBSCAN finds spatial concentrations only; cluster size does not represent demand or utilization.</p>`;toast(`DBSCAN completed: ${d.cluster_count||0} clusters.`)}catch(e){toast('Clustering failed: '+e.message)}finally{btn.disabled=false;btn.textContent='Run DBSCAN'}}
+
+window.addEventListener('resize',()=>{
+  window.requestAnimationFrame(()=>{
+    if(overviewMap)overviewMap.invalidateSize({pan:false});
+    if(planMap&&!$('page-planner').classList.contains('hidden'))planMap.invalidateSize({pan:false});
+  });
+});
+
 async function init(){overviewMap=setupMap('overviewMap');planMap=setupMap('planMap');await refreshOverview();await loadMap('All India','overview');try{const a=await api('/api/analytics');const types=a.charger_types||[];$('chargerTypeFilter').innerHTML='<option value="">All charger types</option>'+types.map(x=>`<option value="${escapeHtml(x.label)}">${escapeHtml(x.label)}</option>`).join('')}catch{};try{const h=await api('/api/health');if(h.status!=='ok')throw new Error(h.detail||'API inventory error');$('apiStatus').textContent='API online · '+num(h.inventory_records)+' records'+(h.india_inventory_loaded&&h.boundary_validation_passed?' · India boundary validated':' · National validation pending')}catch(e){$('apiStatus').textContent='API error';$('apiDot').style.background='#ff7b72';toast('Backend is responding but inventory could not be loaded: '+e.message)} }
 document.querySelectorAll('.navbtn').forEach(b=>b.addEventListener('click',()=>updateNav(b.dataset.page)));
 $('globalState').addEventListener('change',async()=>{await refreshOverview();await loadMap($('globalState').value,'overview');if(activePage==='stations')loadTable()});$('refreshBtn').addEventListener('click',async()=>{await refreshOverview();await loadMap($('globalState').value,'overview');toast('Inventory refreshed from local API.')});$('searchBtn').addEventListener('click',loadTable);$('stationSearch').addEventListener('keydown',e=>{if(e.key==='Enter')loadTable()});$('chargerTypeFilter').addEventListener('change',loadTable);$('downloadInventory').addEventListener('click',()=>csvDownload(currentRows,'north_northeast_ev_station_inventory_filtered.csv'));$('budget').addEventListener('input',updateRangeLabels);$('gap').addEventListener('input',updateRangeLabels);$('runPlan').addEventListener('click',runPlan);$('runClusters').addEventListener('click',runClusters);$('exportPlan').addEventListener('click',()=>currentPlan&&csvDownload(currentPlan.recommendations,'north_northeast_ev_site_screening_plan.csv'));updateRangeLabels();init().catch(e=>toast('Application init failed: '+e.message));

@@ -37,6 +37,54 @@ body{background:var(--bg);color:var(--ink)}
 @media(max-width:790px){.brand-logo{height:44px;max-width:190px}.top{height:64px}}
 @media(min-width:791px) and (max-width:1100px){.brand-logo{height:54px;max-width:265px}}
 
+
+/* EV-Yojna responsive balance: align route inputs, analysis panels and map */
+html,body{width:100%;min-width:0}
+body{min-height:100vh}
+.top{width:100%;padding-inline:clamp(16px,2vw,38px);gap:18px}
+.brand{min-width:0;flex:0 1 auto}
+.brand-logo{height:58px;width:auto;max-width:min(310px,40vw);object-fit:contain}
+.topright{min-width:0;flex:0 0 auto}
+.wrap{width:100%;max-width:none;margin:0;padding:clamp(18px,1.8vw,36px) clamp(18px,2.1vw,42px) 28px}
+.head{align-items:center;gap:24px}
+.head>div:first-child{min-width:0;flex:1}
+.source{flex:0 0 auto;max-width:100%;white-space:normal;line-height:1.45}
+.layout{width:100%;grid-template-columns:minmax(300px,min(24vw,390px)) minmax(0,1fr);gap:clamp(14px,1.25vw,22px);align-items:stretch}
+.layout>aside,.layout>.panel,.layout>article{min-width:0}
+.panel{min-width:0}
+.panelhead{gap:12px;align-items:flex-start}
+.field,.select,input,textarea{min-width:0;max-width:100%}
+.two{align-items:start}
+.statgrid{grid-template-columns:repeat(3,minmax(0,1fr))}
+.table-scroll{max-width:100%}
+.map-wrap{min-width:0;overflow:hidden}
+#routeMap{width:100%;height:100%;min-height:0}
+.footer{align-items:flex-start;padding-top:22px}
+@media(max-width:1100px){
+  .layout{grid-template-columns:minmax(280px,340px) minmax(0,1fr)}
+  .wrap{padding:22px 22px 28px}
+  .head{align-items:flex-start}
+}
+@media(max-width:790px){
+  .top{padding:0 14px;height:64px}
+  .brand-logo{height:44px;max-width:190px}
+  .wrap{padding:14px 12px 24px}
+  .head{flex-direction:column;align-items:stretch;gap:12px}
+  .source{align-self:flex-start}
+  .layout{grid-template-columns:minmax(0,1fr);gap:12px}
+  .map-wrap{height:clamp(330px,78vw,430px)!important;min-height:300px}
+  .statgrid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .scenario{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .two{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .footer{flex-direction:column}
+}
+@media(max-width:420px){
+  .brand-logo{height:38px;max-width:160px}
+  .topright{gap:6px}
+  .back{font-size:11px}
+  .statgrid,.scenario,.two{grid-template-columns:minmax(0,1fr)}
+}
+
 </style>
 </head>
 <body>
@@ -109,6 +157,11 @@ const $=id=>document.getElementById(id);const fmt=(x,d=0)=>x==null?'—':Number(
 let map,routeLayers=[],lastResult=null;
 const terrainColors={plains:'#16866b',rolling:'#3b91a5',hills:'#9066d7',high_himalaya:'#c65a48',remote_high_himalaya:'#922e48',unknown:'#8b95a7'};
 function setupMap(){map=L.map('routeMap',{preferCanvas:true}).setView([31.2,77.0],6);L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Tiles © Esri; Sources: Esri, TomTom, Garmin, FAO, NOAA, USGS'}).addTo(map)}
+
+window.addEventListener('resize',()=>{
+  if(map)window.requestAnimationFrame(()=>map.invalidateSize({pan:false}));
+});
+
 function clearMap(){routeLayers.forEach(l=>map.removeLayer(l));routeLayers=[]}
 function markerPopup(s){return `<div style="font:12px/1.5 Arial;min-width:220px"><b>${esc(s.location||s.candidate_id||'Route feature')}</b><hr><b>Route km:</b> ${fmt(s.route_km,1)}<br><b>Side:</b> ${esc(s.route_side||'—')}<br><b>Terrain:</b> ${esc(s.terrain_label||s.terrain_class||'—')}<br><b>Reported power:</b> ${s.max_power_kw==null?'Unknown':fmt(s.max_power_kw,1)+' kW'}<br><b>Type / purpose:</b> ${esc(s.requirements_label||((s.charger_types||[]).join(', '))||'Reported charger')}<br><b>Nearest inventory:</b> ${s.nearest_inventory_km==null?'—':fmt(s.nearest_inventory_km,1)+' km'}<br><b>Grid:</b> ${esc(s.grid_readiness||'Not assessed')}<p style="font-size:10px;color:#6b7280">Candidate coordinates are not confirmed sites. Inventory operating status is not live verified.</p></div>`}
 function drawMap(d){clearMap();const geom=d.geometry.coordinates;const routePts=geom.map(c=>[c[1],c[0]]);const routeLine=L.polyline(routePts,{color:'#193c78',weight:4,opacity:.72}).addTo(map);routeLayers.push(routeLine);
