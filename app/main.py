@@ -16,7 +16,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from sklearn.cluster import DBSCAN
 from sklearn.neighbors import BallTree
-from app.geo_boundaries import point_inside_india, point_inside_state, normalize_state_name as normalize_boundary_state
+from app.geo_boundaries import normalize_state_name as normalize_boundary_state
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA_PATH = ROOT / "data" / "processed" / "north_india_ev_chargers_map.geojson"
@@ -195,13 +195,17 @@ def load_records() -> list[dict]:
         if state not in STATE_ORDER:
             continue
         if data.get("india_inventory_loaded"):
+            # The national pipeline has already tested every source point against all
+            # 36 WGS84 state/UT polygons and writes only accepted features to this file.
+            # Repeating point-in-polygon operations for ~40,000 rows at API startup
+            # made /api/health and every dashboard endpoint time out. Trust the
+            # generated validation manifest plus each feature's accepted status here.
             if props.get("boundary_status") != "inside_india":
                 continue
-            # Recheck the shipped validated file when loading it into the API.
-            # This prevents a stale/edited GeoJSON from bypassing the polygon gate.
-            if not point_inside_india(lat, lon, INDIA_BOUNDARY_PATH):
-                continue
-            if not point_inside_state(state, lat, lon, INDIA_BOUNDARY_PATH):
+            if props.get("boundary_state_status") not in {
+                "matched_source_state",
+                "corrected_to_polygon_state",
+            }:
                 continue
         power = _num(props.get("charger_rating_kw"))
         connector_kw = _num(props.get("connector_rating_kw"))
